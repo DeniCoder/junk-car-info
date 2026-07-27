@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Брошенная техника — народная карта ржавеющих машин{% endblock %}
+
+{% block body %}
+<div id="map" class="map-fullscreen"></div>
+
+<div class="stamp-header" id="stampHeader">
+    <h1 class="stamp-title">БРОШЕННАЯ ТЕХНИКА</h1>
+    <p class="stamp-subtitle">народный архив машин у дороги</p>
+    <div class="stamp-count">
+        <span class="count-number" id="totalFindings">{{ total_findings }}</span>
+        <span class="count-label">найдено</span>
+    </div>
+</div>
+
+<div class="legend" id="legend">
+    <button class="legend-toggle" id="legendToggle" aria-label="Фильтры">
+        <span class="legend-icon">☰</span>
+    </button>
+    <div class="legend-panel" id="legendPanel">
+        <div class="legend-header">ТИП ТЕХНИКИ</div>
+        <div class="legend-items" id="legendItems">
+            <button class="legend-item active" data-category="all">
+                <span class="legend-dot" style="background:#C0532A"></span> Все
+            </button>
+            {% for cat in categories %}
+            <button class="legend-item" data-category="{{ cat.id }}">
+                <span class="legend-dot" style="background:#{{ 'C0532A' if cat.slug == 'car' else 'E3B53E' if cat.slug == 'tractor' else '6F7A52' if cat.slug == 'trailer' else '5C6569' }}"></span> {{ cat.title }}
+            </button>
+            {% endfor %}
+        </div>
+        <div class="legend-search">
+            <input type="text" id="searchInput" class="search-input" placeholder="Поиск по месту...">
+        </div>
+    </div>
+</div>
+
+<button class="add-btn" id="addBtn" aria-label="Добавить находку">
+    <span class="add-btn-icon">+</span>
+</button>
+
+<div class="sidebar-panel" id="addPanel">
+    <div class="panel-header">
+        <h2 class="panel-title">НОВАЯ НАХОДКА</h2>
+        <button class="panel-close" id="panelClose" aria-label="Закрыть">&times;</button>
+    </div>
+    <form id="addForm" enctype="multipart/form-data" novalidate>
+        <input type="hidden" name="_csrf_token" id="csrfToken" value="">
+
+        <div class="form-group">
+            <label class="form-label">Тип техники *</label>
+            <div class="category-chips" id="categoryChips">
+                {% for cat in categories %}
+                <button type="button" class="chip" data-id="{{ cat.id }}" data-slug="{{ cat.slug }}">
+                    {{ cat.title }}
+                </button>
+                {% endfor %}
+            </div>
+            <input type="hidden" name="category_id" id="categoryId" required>
+        </div>
+
+        <div class="form-group" id="subTypeGroup" style="display:none">
+            <label class="form-label">Подтип</label>
+            <select name="sub_type" id="subType" class="form-select">
+                <option value="">Выберите</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Описание</label>
+            <textarea name="description" id="description" class="form-textarea" maxlength="2000"
+                placeholder="Что видно? Состояние, цвет, номер, детали..."></textarea>
+            <span class="char-count"><span id="charCount">0</span>/2000</span>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Место</label>
+            <input type="text" name="location_name" id="locationName" class="form-input"
+                placeholder="Город / деревня / трасса, км">
+            <button type="button" class="geo-btn" id="geoBtn">
+                📍 Моё местоположение
+            </button>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Координаты (нажмите на карту)</label>
+            <div class="coord-display">
+                <span id="coordDisplay" class="coord-text">—</span>
+            </div>
+            <input type="hidden" name="lat" id="latInput">
+            <input type="hidden" name="lon" id="lonInput">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Фото (до {{ config.MAX_UPLOAD_FILES if config else 6 }})</label>
+            <div class="upload-zone" id="uploadZone">
+                <div class="upload-text">Перетащите фото сюда<br>или нажмите для выбора</div>
+                <input type="file" name="photos" id="photoInput" multiple accept="image/jpeg,image/png,image/webp" class="upload-input">
+            </div>
+            <div class="preview-grid" id="previewGrid"></div>
+            <div class="upload-errors" id="uploadErrors"></div>
+        </div>
+
+        <div class="honeypot-field" aria-hidden="true">
+            <input type="text" name="website" tabindex="-1" autocomplete="off">
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">
+            <span class="submit-text">ОТМЕТИТЬ НАХОДКУ</span>
+        </button>
+    </form>
+</div>
+
+<div class="sidebar-panel detail-panel" id="detailPanel">
+    <div class="panel-header">
+        <button class="panel-close" id="detailClose" aria-label="Закрыть">&times;</button>
+    </div>
+    <div id="detailContent"></div>
+</div>
+
+<div class="empty-state" id="emptyState" style="display:none">
+    <p class="empty-text">Здесь пока пусто.<br>Добавьте первую находку.</p>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<noscript>
+    <div class="noscript-notice">
+        <h2>Брошенная техника</h2>
+        <p>Этот сайт работает лучше с включённым JavaScript.</p>
+        <p>Найдено {{ total_findings }} находок.</p>
+    </div>
+</noscript>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.__CONFIG = {
+        MAX_FILES: {{ config.MAX_UPLOAD_FILES if config else 6 }},
+        DEDUP_RADIUS: {{ config.DEDUP_RADIUS_METERS if config else 30 }},
+    };
+</script>
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+<script src="{{ url_for('static', filename='js/form.js') }}"></script>
+{% endblock %}

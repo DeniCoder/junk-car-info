@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ — Брошенная техника</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="admin-body">
+    <div class="admin-header">
+        <h1 class="admin-title">МОДЕРАЦИЯ</h1>
+        <a href="{{ url_for('admin.dashboard') }}" class="admin-nav">Новые</a>
+        <a href="{{ url_for('admin.dashboard', status_filter='published') }}" class="admin-nav">Опубликованные</a>
+        <a href="{{ url_for('admin.dashboard', status_filter='all') }}" class="admin-nav">Все</a>
+        <a href="{{ url_for('admin.logout') }}" class="admin-nav admin-logout">Выход</a>
+    </div>
+
+    <div class="admin-stats">
+        <span class="admin-stat">На модерации: {{ total_pending }}</span>
+        <span class="admin-stat">Всего на странице: {{ findings|length }}</span>
+    </div>
+
+    <div class="admin-grid">
+        {% for finding in findings %}
+        <div class="admin-card status-border-{{ finding.status }}">
+            <div class="admin-card-header">
+                <span class="admin-id mono">{{ finding.id[:8] }}</span>
+                <span class="admin-status mono status-{{ finding.status }}">{{ finding.status|upper }}</span>
+                <span class="admin-date mono">{{ finding.created_at.strftime('%d.%m.%Y %H:%M') if finding.created_at else '' }}</span>
+            </div>
+
+            {% if finding.photos.first() %}
+            <img src="{{ finding.photos.first().thumb_url }}" alt="" class="admin-thumb">
+            {% endif %}
+
+            <div class="admin-card-meta">
+                <div>{{ finding.category.title if finding.category else '' }}{% if finding.sub_type %} / {{ finding.sub_type }}{% endif %}</div>
+                <div class="mono">{{ "%.4f"|format(finding.lat|float) }}, {{ "%.4f"|format(finding.lon|float) }}</div>
+                {% if finding.location_name %}<div>{{ finding.location_name }}</div>{% endif %}
+            </div>
+
+            {% if finding.description %}
+            <div class="admin-desc">{{ finding.description[:200] }}{% if finding.description|length > 200 %}...{% endif %}</div>
+            {% endif %}
+
+            {% if finding.reports_count > 0 %}
+            <div class="admin-reports">Жалоб: {{ finding.reports_count }}</div>
+            {% endif %}
+
+            <div class="admin-actions">
+                {% if finding.status == 'pending' %}
+                <a href="{{ url_for('admin.moderate', finding_id=finding.id, action='approve', status_filter=status_filter) }}"
+                   class="admin-btn approve">ОДОБРИТЬ</a>
+                <a href="{{ url_for('admin.moderate', finding_id=finding.id, action='reject', status_filter=status_filter) }}"
+                   class="admin-btn reject">ОТКЛОНИТЬ</a>
+                {% endif %}
+                <a href="{{ url_for('admin.delete', finding_id=finding.id) }}"
+                   class="admin-btn delete"
+                   onclick="return confirm('Удалить?')">УДАЛИТЬ</a>
+                <a href="/finding/{{ finding.id }}" target="_blank" class="admin-btn view">ПРОСМОТР</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <div class="admin-pagination">
+        {% for p in pagination.iter_pages() %}
+        {% if p %}
+        <a href="{{ url_for('admin.dashboard', page=p, status_filter=status_filter) }}"
+           class="admin-page {{ 'active' if p == pagination.page }}">{{ p }}</a>
+        {% else %}
+        <span class="admin-page-dots">...</span>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</body>
+</html>

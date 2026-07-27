@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Находка {{ finding.id[:8] }} — Брошенная техника{% endblock %}
+{% block meta_description %}{{ finding.description[:160] if finding.description else 'Находка на карте брошенной техники' }}{% endblock %}
+
+{% block body %}
+<div class="detail-page">
+    <a href="/" class="back-link">&larr; На карту</a>
+
+    <div class="detail-card">
+        <div class="detail-gallery" id="gallery">
+            {% for photo in finding.photos.all() %}
+            <div class="gallery-item" data-index="{{ loop.index0 }}">
+                <img src="{{ photo.web_url }}" alt="Фото находки" loading="lazy" class="gallery-img">
+            </div>
+            {% endfor %}
+            {% if finding.photos.count() == 0 %}
+            <div class="gallery-item gallery-empty">
+                <span>Нет фото</span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if finding.photos.count() > 1 %}
+        <div class="gallery-nav">
+            <button class="gallery-prev" id="galleryPrev">&larr;</button>
+            <span class="gallery-counter" id="galleryCounter">1 / {{ finding.photos.count() }}</span>
+            <button class="gallery-next" id="galleryNext">&rarr;</button>
+        </div>
+        {% endif %}
+
+        <div class="detail-meta">
+            <div class="meta-row">
+                <span class="meta-label">ТИП</span>
+                <span class="meta-value">{{ finding.category.title if finding.category else '—' }}{% if finding.sub_type %} / {{ finding.sub_type }}{% endif %}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">СТАТУС</span>
+                <span class="meta-value status-{{ finding.status }}">
+                    {% if finding.status == 'published' %}НА МЕСТЕ
+                    {% elif finding.status == 'hidden' %}УВЕЗЛИ
+                    {% else %}{{ finding.status|upper }}{% endif %}
+                </span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">КООРДИНАТЫ</span>
+                <span class="meta-value mono">{{ "%.6f"|format(finding.lat|float) }}, {{ "%.6f"|format(finding.lon|float) }}</span>
+            </div>
+            {% if finding.location_name %}
+            <div class="meta-row">
+                <span class="meta-label">МЕСТО</span>
+                <span class="meta-value">{{ finding.location_name }}</span>
+            </div>
+            {% endif %}
+            <div class="meta-row">
+                <span class="meta-label">НАЙДЕНО</span>
+                <span class="meta-value mono">{{ finding.created_at.strftime('%d.%m.%Y') if finding.created_at else '—' }}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">ID</span>
+                <span class="meta-value mono">{{ finding.id[:8] }}</span>
+            </div>
+        </div>
+
+        {% if finding.description %}
+        <div class="detail-description">
+            <div class="desc-label">ОПИСАНИЕ</div>
+            <p class="desc-text">{{ finding.description }}</p>
+        </div>
+        {% endif %}
+
+        <div class="detail-actions">
+            <a href="https://www.google.com/maps/dir/?api=1&destination={{ finding.lat }},{{ finding.lon }}"
+               target="_blank" rel="noopener" class="action-btn">
+                МАРШРУТ
+            </a>
+            <button class="action-btn action-report" id="reportBtn" data-id="{{ finding.id }}">
+                ПОЖАЛОВАТЬСЯ
+            </button>
+        </div>
+
+        <div class="detail-edit" id="editSection" style="display:none">
+            <div class="edit-label">УПРАВЛЕНИЕ НАХОДКОЙ</div>
+            <button class="action-btn action-remove" id="removeBtn" data-id="{{ finding.id }}">
+                УВЕЗТИ (статус)
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const gallery = document.getElementById('gallery');
+    if (!gallery) return;
+    const items = gallery.querySelectorAll('.gallery-item');
+    const counter = document.getElementById('galleryCounter');
+    let current = 0;
+
+    function showSlide(n) {
+        items.forEach((item, i) => {
+            item.style.display = i === n ? 'block' : 'none';
+        });
+        current = n;
+        if (counter) counter.textContent = (n + 1) + ' / ' + items.length;
+    }
+
+    if (items.length > 1) {
+        showSlide(0);
+        document.getElementById('galleryPrev')?.addEventListener('click', () => {
+            showSlide((current - 1 + items.length) % items.length);
+        });
+        document.getElementById('galleryNext')?.addEventListener('click', () => {
+            showSlide((current + 1) % items.length);
+        });
+    }
+
+    const findingId = '{{ finding.id }}';
+    const editTokens = JSON.parse(localStorage.getItem('editTokens') || '{}');
+    if (editTokens[findingId]) {
+        document.getElementById('editSection').style.display = 'block';
+        document.getElementById('removeBtn').addEventListener('click', async function() {
+            const token = editTokens[findingId];
+            const resp = await fetch('/api/findings/' + findingId + '/status', {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({token: token, status: 'removed'})
+            });
+            if (resp.ok) {
+                delete editTokens[findingId];
+                localStorage.setItem('editTokens', JSON.stringify(editTokens));
+                location.reload();
+            }
+        });
+    }
+
+    document.getElementById('reportBtn')?.addEventListener('click', async function() {
+        if (!confirm('Пожаловаться на эту находку?')) return;
+        const resp = await fetch('/api/findings/' + findingId + '/report', {method: 'POST'});
+        if (resp.ok) {
+            alert('Жалоба отправлена');
+        }
+    });
+});
+</script>
+{% endblock %}
