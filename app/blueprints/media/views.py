@@ -1,7 +1,7 @@
 import os
-from flask import Blueprint, send_from_directory, current_app, abort
+from flask import send_from_directory, current_app, abort
 
-media_bp = Blueprint("media", __name__)
+from app.blueprints.media import media_bp
 
 
 @media_bp.route("/file/<path:filepath>")

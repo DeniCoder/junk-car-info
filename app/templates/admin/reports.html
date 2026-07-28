@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports — Брошенная техника</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Condensed:wght@500;700;900&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="admin-body">
+    <div class="admin-header">
+        <h1 class="admin-title">ОТЧЁТЫ</h1>
+        <a href="{{ url_for('admin.dashboard') }}" class="admin-nav">Дашборд</a>
+        <a href="{{ url_for('admin.reports') }}" class="admin-nav" style="border-color:var(--accent-yellow);color:var(--accent-yellow)">Отчёты</a>
+        <a href="{{ url_for('admin.edit_content', slug='privacy') }}" class="admin-nav">Приватность</a>
+        <a href="{{ url_for('admin.edit_content', slug='contacts') }}" class="admin-nav">Контакты</a>
+        <a href="{{ url_for('admin.logout') }}" class="admin-nav admin-logout">Выйти</a>
+    </div>
+
+    <form method="GET" action="{{ url_for('admin.reports') }}" class="admin-filters">
+        <div class="admin-filter-group">
+            <label>Тип</label>
+            <select name="category_id">
+                <option value="">Все</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" {{ 'selected' if f_category_id == cat.id }}>{{ cat.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="admin-filter-group">
+            <label>Статус</label>
+            <select name="status">
+                <option value="">Все</option>
+                <option value="published" {{ 'selected' if f_status == 'published' }}>Published</option>
+                <option value="hidden" {{ 'selected' if f_status == 'hidden' }}>Hidden</option>
+                <option value="rejected" {{ 'selected' if f_status == 'rejected' }}>Rejected</option>
+            </select>
+        </div>
+        <div class="admin-filter-group">
+            <label>С даты</label>
+            <input type="date" name="date_from" value="{{ f_date_from }}">
+        </div>
+        <div class="admin-filter-group">
+            <label>По дату</label>
+            <input type="date" name="date_to" value="{{ f_date_to }}">
+        </div>
+        <div class="admin-filter-group">
+            <label>Место</label>
+            <input type="text" name="search" value="{{ f_search }}" placeholder="Поиск...">
+        </div>
+        <button type="submit" class="admin-filter-btn">ПОИСК</button>
+        <a href="{{ url_for('admin.reports_pdf', category_id=f_category_id, status=f_status, date_from=f_date_from, date_to=f_date_to, search=f_search) }}"
+           class="admin-filter-btn pdf-btn" target="_blank">PDF</a>
+    </form>
+
+    <div class="admin-stats" style="border-bottom:1px solid var(--border)">
+        <span class="admin-stat">Найдено: {{ filtered_total }}</span>
+    </div>
+
+    <div style="overflow-x:auto">
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Тип</th>
+                    <th>Место</th>
+                    <th>Статус</th>
+                    <th>Дата</th>
+                    <th>Жалоб</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in findings %}
+                <tr>
+                    <td class="mono-id">{{ f.id[:8] }}</td>
+                    <td>{{ f.category.title if f.category else '—' }}</td>
+                    <td>{{ f.location_name or '—' }}</td>
+                    <td>
+                        <span class="status-badge status-{{ f.status }}">{{ f.status|upper }}</span>
+                    </td>
+                    <td class="mono">{{ f.created_at.strftime('%d.%m.%Y') if f.created_at else '—' }}</td>
+                    <td>{{ f.reports_count or 0 }}</td>
+                    <td>
+                        <a href="/finding/{{ f.id }}" class="admin-view-btn" target="_blank">ПРОСМОТР</a>
+                        <form method="POST" action="{{ url_for('admin.delete', finding_id=f.id) }}"
+                              style="display:inline" onsubmit="return confirm('Удалить находку?')">
+                            <button type="submit" class="admin-delete-btn">УДАЛИТЬ</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not findings %}
+                <tr><td colspan="7" style="text-align:center;color:var(--text-secondary);padding:24px">Ничего не найдено</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <div class="admin-pagination">
+        {% for p in pagination.iter_pages() %}
+        {% if p %}
+        <a href="{{ url_for('admin.reports', page=p, category_id=f_category_id, status=f_status, date_from=f_date_from, date_to=f_date_to, search=f_search) }}"
+           class="admin-page {{ 'active' if p == pagination.page }}">{{ p }}</a>
+        {% else %}
+        <span class="admin-page-dots">...</span>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Контакты{% endblock %}
+{% block body %}
+<div class="detail-page">
+    <a href="/" class="back-link">&larr; На карту</a>
+    <div class="privacy-content">
+        {% if page %}
+        <h1 class="privacy-title">{{ page.title if page.title else 'КОНТАКТЫ' }}</h1>
+        {% set lines = page.content_md.split('\n') %}
+        {% set ns = namespace(in_list=false) %}
+        {% for line in lines %}
+            {% set stripped = line.strip() %}
+            {% if stripped.startswith('## ') %}
+                {% if ns.in_list %}</ul>{% set ns.in_list = false %}{% endif %}
+                <div class="privacy-section">
+                    <h2>{{ stripped[3:] }}</h2>
+            {% elif stripped.startswith('- ') %}
+                {% if not ns.in_list %}<ul>{% set ns.in_list = true %}{% endif %}
+                <li>{{ stripped[2:] | replace('**', '<strong>') | safe }}</li>
+            {% elif stripped == '' %}
+                {% if ns.in_list %}</ul></div>{% set ns.in_list = false %}{% endif %}
+            {% elif stripped %}
+                {% if ns.in_list %}</ul></div>{% set ns.in_list = false %}{% endif %}
+                <div class="privacy-section">
+                    <p>{{ stripped | replace('**', '<strong>') | safe }}</p>
+                </div>
+            {% endif %}
+        {% endfor %}
+        {% if ns.in_list %}</ul></div>{% endif %}
+        {% else %}
+        <h1 class="privacy-title">КОНТАКТЫ</h1>
+        <div class="privacy-section">
+            <p>Информация пока не добавлена.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

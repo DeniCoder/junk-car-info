@@ -1,42 +1,54 @@
+import hashlib
+import traceback
+
 from flask import request, jsonify, current_app
+from app.blueprints.api import api_bp
 from app.extensions import limiter
 from app.repositories.finding_repository import FindingRepository
 from app.repositories.category_repository import CategoryRepository
 from app.services.finding_service import FindingService
-from app.utils.security import validate_csrf_token
+
+
+def get_fingerprint():
+    raw = (request.remote_addr or "0.0.0.0") + (request.user_agent.string or "")
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
 @api_bp.route("/findings", methods=["POST"])
-@limiter.limit("10/hour")
+@limiter.limit("5/hour")
 def create_finding():
-    files = request.files.getlist("photos")
-    files = [f for f in files if f.filename]
+    try:
+        files = request.files.getlist("photos")
+        files = [f for f in files if f.filename]
 
-    if len(files) > current_app.config.get("MAX_UPLOAD_FILES", 6):
-        return jsonify({"error": f"maximum {current_app.config['MAX_UPLOAD_FILES']} files allowed"}), 400
+        if len(files) > current_app.config.get("MAX_UPLOAD_FILES", 6):
+            return jsonify({"error": f"maximum {current_app.config['MAX_UPLOAD_FILES']} files allowed"}), 400
 
-    form_data = request.form.to_dict()
+        form_data = request.form.to_dict()
+        fingerprint = get_fingerprint()
 
-    finding, errors = FindingService.create_finding(form_data, files, current_app.config)
-    if errors and not finding:
-        return jsonify({"errors": errors}), 400
+        finding, errors = FindingService.create_finding(form_data, files, current_app.config, creator_fingerprint=fingerprint)
+        if errors and not finding:
+            return jsonify({"errors": errors}), 400
 
-    nearby = FindingService.find_nearby(finding.lat, finding.lon)
-    warning = None
-    if nearby:
-        warning = f"Found {len(nearby)} finding(s) within {current_app.config.get('DEDUP_RADIUS_METERS', 30)}m. Are you sure this is a new discovery?"
+        nearby = FindingService.find_nearby(finding.lat, finding.lon)
+        warning = None
+        if nearby:
+            warning = f"Found {len(nearby)} finding(s) within {current_app.config.get('DEDUP_RADIUS_METERS', 30)}m. Are you sure this is a new discovery?"
 
-    response = {
-        "id": finding.id,
-        "token": errors.get("token") if isinstance(errors, dict) else None,
-        "status": finding.status,
-        "moderation_notice": "Your finding is pending moderation review." if finding.status == "pending" else None,
-        "duplicate_warning": warning,
-    }
-    if isinstance(errors, dict) and errors.get("photo_errors"):
-        response["photo_errors"] = errors["photo_errors"]
+        response = {
+            "id": finding.id,
+            "status": finding.status,
+            "moderation_notice": "Ожидает подтверждения от 3 пользователей." if finding.status == "pending" else None,
+            "duplicate_warning": warning,
+        }
+        if isinstance(errors, dict) and errors.get("photo_errors"):
+            response["photo_errors"] = errors["photo_errors"]
 
-    return jsonify(response), 201
+        return jsonify(response), 201
+    except Exception:
+        traceback.print_exc()
+        return jsonify({"error": "internal server error"}), 500
 
 
 @api_bp.route("/findings", methods=["GET"])
@@ -73,21 +85,20 @@ def get_finding(finding_id):
     return jsonify(finding.to_dict())
 
 
-@api_bp.route("/findings/<finding_id>/status", methods=["PATCH"])
+@api_bp.route("/findings/<finding_id>/vote", methods=["POST"])
 @limiter.limit("30/hour")
-def update_finding_status(finding_id):
+def vote_finding(finding_id):
     data = request.get_json(silent=True) or {}
-    token = data.get("token")
-    new_status = data.get("status")
+    vote_type = data.get("vote_type")
+    if not vote_type:
+        return jsonify({"error": "vote_type required (confirmed or removed)"}), 400
 
-    if not token or not new_status:
-        return jsonify({"error": "token and status required"}), 400
-
-    finding, error = FindingService.update_status(finding_id, token, new_status)
+    fingerprint = get_fingerprint()
+    result, error = FindingService.vote(finding_id, fingerprint, vote_type)
     if error:
         return jsonify({"error": error}), 400
 
-    return jsonify(finding.to_dict(include_photos=False))
+    return jsonify(result)
 
 
 @api_bp.route("/findings/<finding_id>/report", methods=["POST"])
@@ -103,3 +114,25 @@ def report_finding(finding_id):
 def list_categories():
     cats = CategoryRepository.get_all()
     return jsonify({"categories": [c.to_dict() for c in cats]})
+
+
+@api_bp.route("/geocode", methods=["GET"])
+def geocode():
+    import urllib.request
+    import urllib.parse
+    import json as py_json
+
+    q = request.args.get("q", "")
+    if len(q) < 2:
+        return jsonify({"results": []})
+    url = f"https://nominatim.openstreetmap.org/search?format=json&q={urllib.parse.quote(q)}&countrycodes=ru&limit=1"
+    req = urllib.request.Request(url, headers={
+        "User-Agent": "JunkCarMap/1.0 (research project)",
+        "Accept-Language": "ru",
+    })
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = py_json.loads(resp.read().decode("utf-8"))
+        return jsonify({"results": data})
+    except Exception:
+        return jsonify({"results": []})

@@ -8,22 +8,23 @@
 
     <div class="detail-card">
         <div class="detail-gallery" id="gallery">
-            {% for photo in finding.photos.all() %}
-            <div class="gallery-item" data-index="{{ loop.index0 }}">
-                <img src="{{ photo.web_url }}" alt="Фото находки" loading="lazy" class="gallery-img">
+            {% set photos = finding.photos.all() %}
+            {% for photo in photos %}
+            <div class="gallery-item" data-index="{{ loop.index0 }}" data-url="{{ photo.web_url }}">
+                <img src="{{ photo.thumb_url }}" alt="Фото находки" loading="lazy" class="gallery-img">
             </div>
             {% endfor %}
-            {% if finding.photos.count() == 0 %}
+            {% if photos|length == 0 %}
             <div class="gallery-item gallery-empty">
                 <span>Нет фото</span>
             </div>
             {% endif %}
         </div>
 
-        {% if finding.photos.count() > 1 %}
+        {% if photos|length > 1 %}
         <div class="gallery-nav">
             <button class="gallery-prev" id="galleryPrev">&larr;</button>
-            <span class="gallery-counter" id="galleryCounter">1 / {{ finding.photos.count() }}</span>
+            <span class="gallery-counter" id="galleryCounter">1 / {{ photos|length }}</span>
             <button class="gallery-next" id="galleryNext">&rarr;</button>
         </div>
         {% endif %}
@@ -38,6 +39,7 @@
                 <span class="meta-value status-{{ finding.status }}">
                     {% if finding.status == 'published' %}НА МЕСТЕ
                     {% elif finding.status == 'hidden' %}УВЕЗЛИ
+                    {% elif finding.status == 'pending' %}ОЖИДАНИЕ
                     {% else %}{{ finding.status|upper }}{% endif %}
                 </span>
             </div>
@@ -78,11 +80,23 @@
             </button>
         </div>
 
-        <div class="detail-edit" id="editSection" style="display:none">
-            <div class="edit-label">УПРАВЛЕНИЕ НАХОДКОЙ</div>
-            <button class="action-btn action-remove" id="removeBtn" data-id="{{ finding.id }}">
-                УВЕЗТИ (статус)
-            </button>
+        <div class="vote-section">
+            <div class="vote-label">ПОДТВЕРДИТЬ СТАТУС</div>
+            <div class="vote-buttons">
+                <button class="vote-btn vote-confirmed" id="voteConfirmed" data-type="confirmed">
+                    НА МЕСТЕ ✓
+                </button>
+                <button class="vote-btn vote-removed" id="voteRemoved" data-type="removed">
+                    УВЕЗЛИ ✗
+                </button>
+            </div>
+            <div class="unconfirmed-notice" id="unconfirmedNotice"{% if finding.confirmed_count_others >= 3 %} style="display:none"{% endif %}>
+                Информация не подтверждена — необходимо 3 независимых подтверждения от разных пользователей
+            </div>
+            <div class="vote-counts">
+                <span class="vote-count confirmed">Подтверждений: <span id="voteConfirmedOthers">{{ finding.confirmed_count_others }}</span>/3</span>
+                <span class="vote-count removed">Снято: <span id="voteRemovedCount">{{ finding.removed_count }}</span></span>
+            </div>
         </div>
     </div>
 </div>
@@ -91,14 +105,14 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const gallery = document.getElementById('gallery');
-    if (!gallery) return;
-    const items = gallery.querySelectorAll('.gallery-item');
-    const counter = document.getElementById('galleryCounter');
-    let current = 0;
+    // Gallery slideshow
+    var gallery = document.getElementById('gallery');
+    var items = gallery ? gallery.querySelectorAll('.gallery-item') : [];
+    var counter = document.getElementById('galleryCounter');
+    var current = 0;
 
     function showSlide(n) {
-        items.forEach((item, i) => {
+        items.forEach(function(item, i) {
             item.style.display = i === n ? 'block' : 'none';
         });
         current = n;
@@ -107,39 +121,146 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (items.length > 1) {
         showSlide(0);
-        document.getElementById('galleryPrev')?.addEventListener('click', () => {
+        var prev = document.getElementById('galleryPrev');
+        var next = document.getElementById('galleryNext');
+        if (prev) prev.addEventListener('click', function() {
             showSlide((current - 1 + items.length) % items.length);
         });
-        document.getElementById('galleryNext')?.addEventListener('click', () => {
+        if (next) next.addEventListener('click', function() {
             showSlide((current + 1) % items.length);
         });
     }
 
-    const findingId = '{{ finding.id }}';
-    const editTokens = JSON.parse(localStorage.getItem('editTokens') || '{}');
-    if (editTokens[findingId]) {
-        document.getElementById('editSection').style.display = 'block';
-        document.getElementById('removeBtn').addEventListener('click', async function() {
-            const token = editTokens[findingId];
-            const resp = await fetch('/api/findings/' + findingId + '/status', {
-                method: 'PATCH',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({token: token, status: 'removed'})
+    // Lightbox
+    function openLightbox(startIndex) {
+        var urls = [];
+        items.forEach(function(item) {
+            var url = item.getAttribute('data-url');
+            if (url) urls.push(url);
+        });
+        if (urls.length === 0) return;
+
+        var idx = startIndex || 0;
+        var overlay = document.createElement('div');
+        overlay.className = 'lightbox-overlay';
+
+        var img = document.createElement('img');
+        img.className = 'lightbox-img';
+        img.src = urls[idx];
+        overlay.appendChild(img);
+
+        var closeBtn = document.createElement('button');
+        closeBtn.className = 'lightbox-close';
+        closeBtn.textContent = '×';
+        overlay.appendChild(closeBtn);
+
+        if (urls.length > 1) {
+            var prevBtn = document.createElement('button');
+            prevBtn.className = 'lightbox-nav lightbox-prev';
+            prevBtn.textContent = '‹';
+            overlay.appendChild(prevBtn);
+
+            var nextBtn = document.createElement('button');
+            nextBtn.className = 'lightbox-nav lightbox-next';
+            nextBtn.textContent = '›';
+            overlay.appendChild(nextBtn);
+
+            var lCounter = document.createElement('div');
+            lCounter.className = 'lightbox-counter';
+            lCounter.textContent = (idx + 1) + ' / ' + urls.length;
+            overlay.appendChild(lCounter);
+        }
+
+        document.body.appendChild(overlay);
+
+        function updateImg() {
+            img.src = urls[idx];
+            if (lCounter) lCounter.textContent = (idx + 1) + ' / ' + urls.length;
+        }
+
+        function close() {
+            overlay.remove();
+        }
+
+        closeBtn.addEventListener('click', close);
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) close();
+        });
+
+        if (urls.length > 1) {
+            prevBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                idx = (idx - 1 + urls.length) % urls.length;
+                updateImg();
             });
-            if (resp.ok) {
-                delete editTokens[findingId];
-                localStorage.setItem('editTokens', JSON.stringify(editTokens));
-                location.reload();
+            nextBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                idx = (idx + 1) % urls.length;
+                updateImg();
+            });
+        }
+
+        document.addEventListener('keydown', function handler(e) {
+            if (e.key === 'Escape') { close(); document.removeEventListener('keydown', handler); }
+            if (urls.length > 1) {
+                if (e.key === 'ArrowLeft') { idx = (idx - 1 + urls.length) % urls.length; updateImg(); }
+                if (e.key === 'ArrowRight') { idx = (idx + 1) % urls.length; updateImg(); }
             }
         });
     }
 
-    document.getElementById('reportBtn')?.addEventListener('click', async function() {
+    // Click on gallery image opens lightbox
+    items.forEach(function(item, i) {
+        item.addEventListener('click', function() {
+            openLightbox(i);
+        });
+        item.style.cursor = 'zoom-in';
+    });
+
+    var findingId = '{{ finding.id }}';
+
+    document.getElementById('reportBtn').addEventListener('click', function() {
         if (!confirm('Пожаловаться на эту находку?')) return;
-        const resp = await fetch('/api/findings/' + findingId + '/report', {method: 'POST'});
-        if (resp.ok) {
-            alert('Жалоба отправлена');
-        }
+        fetch('/api/findings/' + findingId + '/report', {method: 'POST'})
+            .then(function(r) { return r.json(); })
+            .then(function() { alert('Жалоба отправлена'); });
+    });
+
+    var voted = JSON.parse(localStorage.getItem('votedFindings') || '{}');
+    if (voted[findingId]) {
+        var btn = document.querySelector('.vote-btn.' + (voted[findingId] === 'confirmed' ? 'vote-confirmed' : 'vote-removed'));
+        if (btn) btn.classList.add('voted');
+    }
+
+    document.querySelectorAll('.vote-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var voteType = btn.dataset.type;
+            fetch('/api/findings/' + findingId + '/vote', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({vote_type: voteType})
+            })
+            .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+            .then(function(result) {
+                if (result.ok) {
+                    var data = result.data;
+                    document.getElementById('voteConfirmedOthers').textContent = data.confirmed_others;
+                    document.getElementById('voteRemovedCount').textContent = data.removed;
+                    var notice = document.getElementById('unconfirmedNotice');
+                    if (notice) {
+                        notice.style.display = data.confirmed_others < 3 ? 'block' : 'none';
+                    }
+                    voted[findingId] = voteType;
+                    localStorage.setItem('votedFindings', JSON.stringify(voted));
+                    btn.classList.add('voted');
+                    if (data.finding_status === 'hidden' || data.finding_status === 'published') {
+                        location.reload();
+                    }
+                } else {
+                    alert(result.data.error || 'Ошибка');
+                }
+            });
+        });
     });
 });
 </script>

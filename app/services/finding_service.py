@@ -1,4 +1,3 @@
-import secrets
 from datetime import datetime, timezone
 
 from flask import current_app
@@ -9,14 +8,15 @@ from app.models.finding_photo import FindingPhoto
 from app.repositories.finding_repository import FindingRepository
 from app.repositories.photo_repository import PhotoRepository
 from app.services.photo_service import process_image, check_magic_bytes, delete_photo_files
-from app.utils.security import hash_token, verify_token
 from app.utils.validators import validate_lat_lon, validate_description, validate_location_name
+
+REMOVE_THRESHOLD = 3
 
 
 class FindingService:
 
     @staticmethod
-    def create_finding(data, files, config):
+    def create_finding(data, files, config, creator_fingerprint=None):
         category_id = data.get("category_id")
         if not category_id:
             return None, {"category_id": "required"}
@@ -33,9 +33,7 @@ class FindingService:
         location_name = validate_location_name(data.get("location_name", ""))
         sub_type = data.get("sub_type", "").strip() if data.get("sub_type") else None
 
-        token = secrets.token_urlsafe(32)
-        token_hash = hash_token(token)
-
+        now = datetime.now(timezone.utc)
         finding = Finding(
             category_id=category_id,
             sub_type=sub_type,
@@ -43,11 +41,10 @@ class FindingService:
             location_name=location_name,
             lat=lat,
             lon=lon,
-            status="pending" if not config.get("AUTO_PUBLISH", False) else "published",
-            edit_token_hash=token_hash,
+            status="published",
+            published_at=now,
+            creator_fingerprint=creator_fingerprint,
         )
-        if config.get("AUTO_PUBLISH", False):
-            finding.published_at = datetime.now(timezone.utc)
 
         FindingRepository.create(finding)
 
@@ -79,25 +76,11 @@ class FindingService:
             )
             PhotoRepository.create(photo)
 
-        return finding, {"token": token, "photo_errors": photo_errors if photo_errors else None}
+        return finding, {"photo_errors": photo_errors if photo_errors else None}
 
     @staticmethod
     def get_finding(finding_id):
         return FindingRepository.get_by_id(finding_id)
-
-    @staticmethod
-    def update_status(finding_id, token, new_status):
-        finding = FindingRepository.get_by_id(finding_id)
-        if not finding:
-            return None, "not found"
-        if not finding.edit_token_hash:
-            return None, "editing not available"
-        if not verify_token(token, finding.edit_token_hash):
-            return None, "invalid token"
-        if new_status not in ("published", "removed"):
-            return None, "invalid status"
-        updated = FindingRepository.update_status(finding_id, new_status)
-        return updated, None
 
     @staticmethod
     def report_finding(finding_id):
@@ -106,12 +89,8 @@ class FindingService:
             return None, "not found"
         from app.models.report import Report
         report = Report(finding_id=finding_id, reason="user report")
-        from app.extensions import db
         db.session.add(report)
         finding.reports_count = (finding.reports_count or 0) + 1
-        if finding.reports_count >= 5 and finding.status == "published":
-            finding.status = "hidden"
-            finding.hidden_at = datetime.now(timezone.utc)
         db.session.commit()
         return finding, None
 
@@ -122,16 +101,6 @@ class FindingService:
         return FindingRepository.get_published_near(lat, lon, radius_m)
 
     @staticmethod
-    def moderate(finding_id, action):
-        if action == "approve":
-            return FindingRepository.update_status(finding_id, "published")
-        elif action == "reject":
-            return FindingRepository.update_status(finding_id, "rejected")
-        elif action == "remove":
-            return FindingRepository.update_status(finding_id, "removed")
-        return None
-
-    @staticmethod
     def delete_finding(finding_id):
         finding = FindingRepository.get_by_id(finding_id)
         if not finding:
@@ -140,6 +109,38 @@ class FindingService:
         for photo in finding.photos.all():
             delete_photo_files(photo, config)
             db.session.delete(photo)
+        from app.models.report import Report
+        from app.models.vote import Vote
+        Report.query.filter_by(finding_id=finding_id).delete()
+        Vote.query.filter_by(finding_id=finding_id).delete()
         db.session.delete(finding)
         db.session.commit()
         return True
+
+    @staticmethod
+    def vote(finding_id, fingerprint, vote_type):
+        from app.repositories.vote_repository import VoteRepository
+
+        finding = FindingRepository.get_by_id(finding_id)
+        if not finding:
+            return None, "not found"
+
+        recent = VoteRepository.get_recent_by_finding_and_fingerprint(finding_id, fingerprint)
+        if recent:
+            return None, "вы уже голосовали"
+
+        VoteRepository.create(finding_id, fingerprint, vote_type)
+        confirmed, removed = VoteRepository.count_by_type(finding_id)
+        confirmed_others = VoteRepository.count_confirmed_excluding_creator(finding_id, finding.creator_fingerprint)
+
+        if removed >= REMOVE_THRESHOLD and finding.status != "hidden":
+            finding.status = "hidden"
+            finding.hidden_at = datetime.now(timezone.utc)
+            db.session.commit()
+
+        return {
+            "confirmed": confirmed,
+            "confirmed_others": confirmed_others,
+            "removed": removed,
+            "finding_status": finding.status,
+        }, None

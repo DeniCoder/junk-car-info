@@ -227,6 +227,22 @@
                 return;
             }
 
+            if (!description.value.trim()) {
+                showToast('Добавьте описание находки', 'error');
+                return;
+            }
+
+            var locationName = document.getElementById('locationName');
+            if (!locationName.value.trim()) {
+                showToast('Укажите место (город / трасса)', 'error');
+                return;
+            }
+
+            if (selectedFiles.length === 0) {
+                showToast('Добавьте хотя бы одно фото', 'error');
+                return;
+            }
+
             var formData = new FormData();
             formData.append('category_id', categoryIdInput.value);
             formData.append('sub_type', subTypeSelect.value);
@@ -249,12 +265,6 @@
                 .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, data: d }; }); })
                 .then(function (result) {
                     if (result.ok && result.data.id) {
-                        if (result.data.token) {
-                            var tokens = JSON.parse(localStorage.getItem('editTokens') || '{}');
-                            tokens[result.data.id] = result.data.token;
-                            localStorage.setItem('editTokens', JSON.stringify(tokens));
-                        }
-
                         var msg = 'Находка создана!';
                         if (result.data.moderation_notice) {
                             msg += ' ' + result.data.moderation_notice;

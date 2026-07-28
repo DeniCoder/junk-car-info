@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Жалоба{% endblock %}
+{% block body %}
+<div class="detail-page">
+    <a href="/" class="back-link">&larr; На карту</a>
+    <div class="privacy-content">
+        <h1 class="privacy-title">ЖАЛОБА</h1>
+        <form class="complaint-form" id="complaintForm" onsubmit="return handleComplaint(event)">
+            <div class="form-group">
+                <label class="form-label" for="complaintEmail">Email (необязательно)</label>
+                <input class="form-input" type="email" id="complaintEmail" name="email" placeholder="your@email.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="complaintFindingId">ID находки (необязательно)</label>
+                <input class="form-input" type="text" id="complaintFindingId" name="finding_id" value="{{ finding_id }}" placeholder="Например, abc123">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="complaintMessage">Сообщение *</label>
+                <textarea class="form-textarea" id="complaintMessage" name="message" required rows="5" placeholder="Опишите проблему..."></textarea>
+            </div>
+            <button type="submit" class="submit-btn">Отправить жалобу</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+function handleComplaint(e) {
+    e.preventDefault();
+    var c = document.getElementById('toastContainer');
+    if (!c) {
+        c = document.createElement('div');
+        c.id = 'toastContainer';
+        c.className = 'toast-container';
+        document.body.appendChild(c);
+    }
+    var t = document.createElement('div');
+    t.className = 'toast success';
+    t.textContent = 'Жалоба отправлена. Мы рассмотрим её в ближайшее время.';
+    c.appendChild(t);
+    setTimeout(function() { t.remove(); }, 4000);
+    document.getElementById('complaintForm').reset();
+    return false;
+}
+</script>
+{% endblock %}

@@ -1,13 +1,16 @@
-from flask import render_template
+from flask import render_template, current_app, request
+from app.blueprints.web import web_bp
 from app.repositories.finding_repository import FindingRepository
 from app.repositories.category_repository import CategoryRepository
+from app.models.site_content import SiteContent
 
 
 @web_bp.route("/")
 def index():
     total = FindingRepository.count_published()
     categories = CategoryRepository.get_all()
-    return render_template("index.html", total_findings=total, categories=categories)
+    return render_template("index.html", total_findings=total, categories=categories,
+                           config=current_app.config)
 
 
 @web_bp.route("/finding/<finding_id>")
@@ -21,6 +24,18 @@ def finding_detail(finding_id):
 @web_bp.route("/privacy")
 def privacy():
     return render_template("privacy.html")
+
+
+@web_bp.route("/contacts")
+def contacts():
+    page = SiteContent.query.filter_by(slug="contacts").first()
+    return render_template("contacts.html", page=page)
+
+
+@web_bp.route("/complaint")
+def complaint():
+    finding_id = request.args.get("finding_id", "")
+    return render_template("complaint.html", finding_id=finding_id)
 
 
 @web_bp.route("/noscript")

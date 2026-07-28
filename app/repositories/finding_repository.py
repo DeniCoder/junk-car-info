@@ -22,7 +22,7 @@ class FindingRepository:
     @staticmethod
     def get_published_in_bbox(south, west, north, east, category_id=None, status="published", limit=500):
         q = Finding.query.filter(
-            Finding.status == status,
+            Finding.status.in_(["published", "pending"]),
             Finding.lat >= south,
             Finding.lat <= north,
             Finding.lon >= west,
@@ -30,15 +30,16 @@ class FindingRepository:
         )
         if category_id:
             q = q.filter_by(category_id=category_id)
-        return q.order_by(Finding.published_at.desc()).limit(limit).all()
+        return q.order_by(Finding.created_at.desc()).limit(limit).all()
 
     @staticmethod
     def get_published_near(lat, lon, radius_m, category_id=None):
         from app.utils.validators import haversine_distance
+        lat_f, lon_f = float(lat), float(lon)
         candidates = Finding.query.filter(
             Finding.status == "published",
-            Finding.lat.between(lat - 0.01, lat + 0.01),
-            Finding.lon.between(lon - 0.01, lon + 0.01),
+            Finding.lat.between(lat_f - 0.01, lat_f + 0.01),
+            Finding.lon.between(lon_f - 0.01, lon_f + 0.01),
         ).all()
         nearby = []
         for f in candidates:
@@ -80,7 +81,7 @@ class FindingRepository:
 
     @staticmethod
     def count_published():
-        return Finding.query.filter_by(status="published").count()
+        return Finding.query.filter(Finding.status.in_(["published", "pending"])).count()
 
     @staticmethod
     def delete(finding):

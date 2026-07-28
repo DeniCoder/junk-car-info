@@ -14,7 +14,7 @@ class Finding(db.Model):
     lat = db.Column(db.Numeric(9, 6), nullable=False)
     lon = db.Column(db.Numeric(9, 6), nullable=False)
     status = db.Column(db.String(16), nullable=False, default="pending", index=True)
-    edit_token_hash = db.Column(db.String(128), nullable=True)
+    creator_fingerprint = db.Column(db.String(64), nullable=True)
     reports_count = db.Column(db.Integer, default=0, nullable=False)
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     published_at = db.Column(db.DateTime, nullable=True)
@@ -25,14 +25,23 @@ class Finding(db.Model):
     )
     report_entries = db.relationship("Report", backref="finding", lazy="dynamic")
 
+    @property
+    def confirmed_count_others(self):
+        from app.repositories.vote_repository import VoteRepository
+        return VoteRepository.count_confirmed_excluding_creator(self.id, self.creator_fingerprint)
+
     __table_args__ = (
         db.Index("ix_findings_status_published", "status", "published_at"),
         db.Index("ix_findings_coords", "lat", "lon"),
     )
 
-    def to_dict(self, include_photos=True, include_edit_token=False):
+    def to_dict(self, include_photos=True):
         from app.extensions import db as _db
-        cat = _db.session.get(Category, self.category_id)
+        from app.models.category import Category as _Cat
+        cat = _db.session.get(_Cat, self.category_id)
+        from app.repositories.vote_repository import VoteRepository
+        confirmed, removed = VoteRepository.count_by_type(self.id)
+        confirmed_others = VoteRepository.count_confirmed_excluding_creator(self.id, self.creator_fingerprint)
         d = {
             "id": self.id,
             "category_id": self.category_id,
@@ -44,6 +53,9 @@ class Finding(db.Model):
             "lon": float(self.lon),
             "status": self.status,
             "reports_count": self.reports_count,
+            "confirmed_count": confirmed,
+            "confirmed_count_others": confirmed_others,
+            "removed_count": removed,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "published_at": self.published_at.isoformat() if self.published_at else None,
         }

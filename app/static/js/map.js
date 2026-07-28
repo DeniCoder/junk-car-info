@@ -34,7 +34,7 @@
     map.addLayer(markers);
 
     var currentCategory = 'all';
-    var loadedMarkers = {};
+    var searchInput = document.getElementById('searchInput');
 
     function createMarkerIcon(finding) {
         var cls = 'marker-icon';
@@ -49,49 +49,105 @@
         });
     }
 
+    // Store popup timeout ref for hover behavior
+    var popupTimeout = null;
+
+    function addPopupEvents(marker, finding) {
+        var statusText = 'НА МЕСТЕ';
+        var statusColor = '#6F7A52';
+
+        var thumbHtml = finding.thumb_url
+            ? '<img src="' + finding.thumb_url + '" style="width:100%;height:120px;object-fit:cover;margin-bottom:8px;border:1px solid #38302A;">'
+            : '';
+
+        var popupHtml =
+            '<div class="popup-title">' + escapeHtml(finding.location_name || finding.sub_type || 'Находка') + '</div>' +
+            '<div class="popup-location">' + finding.lat.toFixed(6) + ', ' + finding.lon.toFixed(6) + '</div>' +
+            '<div class="popup-status" style="color:' + statusColor + '">' + statusText + '</div>' +
+            thumbHtml +
+            '<a class="popup-link" href="/finding/' + finding.id + '">ПОДРОБНЕЕ \u2192</a>';
+
+        marker.bindPopup(popupHtml, {
+            maxWidth: 280,
+            autoPanPadding: [50, 50],
+            closeOnClick: false,
+            autoPan: true
+        });
+
+        marker.on('mouseover', function () {
+            clearTimeout(popupTimeout);
+            marker.openPopup();
+        });
+
+        marker.on('mouseout', function () {
+            // Long delay — cancelled if mouse enters popup
+            popupTimeout = setTimeout(function () {
+                marker.closePopup();
+            }, 600);
+        });
+
+        marker.on('popupopen', function () {
+            var el = marker.getPopup().getElement();
+            if (el) {
+                el.addEventListener('mouseenter', function () {
+                    clearTimeout(popupTimeout);
+                });
+                el.addEventListener('mouseleave', function () {
+                    popupTimeout = setTimeout(function () {
+                        marker.closePopup();
+                    }, 300);
+                });
+            }
+        });
+
+        marker.on('click', function () {
+            map.setView([finding.lat, finding.lon], Math.max(map.getZoom(), 12));
+        });
+    }
+
     function loadFindings() {
         var bounds = map.getBounds();
         var bbox = bounds.getSouth() + ',' + bounds.getWest() + ',' + bounds.getNorth() + ',' + bounds.getEast();
-        var url = '/api/findings?bbox=' + bbox + '&status=published';
-        if (currentCategory !== 'all') {
-            url += '&category_id=' + currentCategory;
-        }
+        var url = '/api/findings?bbox=' + bbox;
 
         fetch(url)
             .then(function (r) { return r.json(); })
             .then(function (data) {
                 markers.clearLayers();
-                loadedMarkers = {};
-                var count = data.count || 0;
+
+                var allFindings = data.findings || [];
+
+                // Client-side category filter
+                var filtered = allFindings;
+                if (currentCategory !== 'all') {
+                    filtered = filtered.filter(function (f) {
+                        return String(f.category_id) === String(currentCategory);
+                    });
+                }
+
+                // Client-side search filter (location_name)
+                var q = (searchInput && searchInput.value) ? searchInput.value.trim().toLowerCase() : '';
+                if (q.length >= 2) {
+                    filtered = filtered.filter(function (f) {
+                        var haystack = ((f.location_name || '') + ' ' + (f.sub_type || '')).toLowerCase();
+                        return haystack.indexOf(q) !== -1;
+                    });
+                }
+
+                // Update counter with filtered count
                 var counterEl = document.getElementById('totalFindings');
-                if (counterEl) counterEl.textContent = count;
+                if (counterEl) counterEl.textContent = filtered.length;
 
                 var emptyState = document.getElementById('emptyState');
                 if (emptyState) {
-                    emptyState.style.display = count === 0 ? 'block' : 'none';
+                    emptyState.style.display = filtered.length === 0 ? 'block' : 'none';
                 }
 
-                (data.findings || []).forEach(function (f) {
+                filtered.forEach(function (f) {
                     var icon = createMarkerIcon(f);
                     var marker = L.marker([f.lat, f.lon], { icon: icon });
-
-                    var statusText = f.status === 'published' ? 'НА МЕСТЕ' : 'УВЕЗЛИ';
-                    var statusColor = f.status === 'published' ? '#6F7A52' : '#E3B53E';
-                    var thumbHtml = f.thumb_url ? '<img src="' + f.thumb_url + '" style="width:100%;height:120px;object-fit:cover;margin-bottom:8px;border:1px solid #38302A;">' : '';
-
-                    var popupHtml =
-                        '<div class="popup-title">' + escapeHtml(f.location_name || f.sub_type || 'Находка') + '</div>' +
-                        '<div class="popup-location">' + f.lat.toFixed(6) + ', ' + f.lon.toFixed(6) + '</div>' +
-                        '<div class="popup-status" style="color:' + statusColor + '">' + statusText + '</div>' +
-                        thumbHtml +
-                        '<a class="popup-link" href="/finding/' + f.id + '">ПОДРОБНЕЕ →</a>';
-
-                    marker.bindPopup(popupHtml, { maxWidth: 280, className: '' });
-                    marker.on('click', function () {
-                        map.setView([f.lat, f.lon], Math.max(map.getZoom(), 12));
-                    });
+                    addPopupEvents(marker, f);
                     markers.addLayer(marker);
-                    loadedMarkers[f.id] = marker;
                 });
             })
             .catch(function (err) {
@@ -105,11 +161,12 @@
         return div.innerHTML;
     }
 
-    map.on('moveend', loadFindings);
-    map.on('zoomend', loadFindings);
-
     // Initial load
     loadFindings();
+
+    // Reload on drag or zoom (not autoPan — which only fires moveend)
+    map.on('dragend', loadFindings);
+    map.on('zoomend', loadFindings);
 
     // Category filter
     var legendItems = document.querySelectorAll('.legend-item');
@@ -131,32 +188,55 @@
         });
     }
 
-    // Search
-    var searchInput = document.getElementById('searchInput');
+    // Search — Nominatim geocoding + client filter
+    var searchTimeout;
+
     if (searchInput) {
-        var searchTimeout;
+        searchInput.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                clearTimeout(searchTimeout);
+                performSearch();
+            }
+        });
+
         searchInput.addEventListener('input', function () {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(function () {
-                var q = searchInput.value.trim().toLowerCase();
+                var q = searchInput.value.trim();
                 if (q.length < 2) {
                     loadFindings();
                     return;
                 }
-                // Simple client-side filter for visible markers
-                markers.eachLayer(function (layer) {
-                    if (layer.getPopup) {
-                        var popup = layer.getPopup();
-                        if (popup && popup.getContent) {
-                            var content = popup.getContent();
-                            if (typeof content === 'string' && content.toLowerCase().indexOf(q) === -1) {
-                                markers.removeLayer(layer);
-                            }
-                        }
-                    }
-                });
-            }, 300);
+                performSearch();
+            }, 500);
         });
+    }
+
+    function performSearch() {
+        var q = searchInput.value.trim();
+        if (q.length < 2) {
+            loadFindings();
+            return;
+        }
+
+        // Filter visible markers by location_name
+        loadFindings();
+
+        // Geocode via server proxy and fly to result
+        fetch('/api/geocode?q=' + encodeURIComponent(q))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                var results = data.results || [];
+                if (results.length > 0) {
+                    var lat = parseFloat(results[0].lat);
+                    var lon = parseFloat(results[0].lon);
+                    map.setView([lat, lon], 12);
+                    // Reload markers after fly animation completes
+                    map.once('moveend', loadFindings);
+                }
+            })
+            .catch(function () {});
     }
 
     // Expose map for other modules
