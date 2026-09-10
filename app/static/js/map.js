@@ -6,8 +6,8 @@
     'use strict';
 
     var map = L.map('map', {
-        center: [55.75, 37.62],
-        zoom: 5,
+        center: [20, 0],
+        zoom: 3,
         zoomControl: false,
         attributionControl: false
     });

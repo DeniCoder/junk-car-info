@@ -141,10 +141,15 @@ def geocode():
     q = request.args.get("q", "")
     if len(q) < 2:
         return jsonify({"results": []})
-    url = f"https://nominatim.openstreetmap.org/search?format=json&q={urllib.parse.quote(q)}&countrycodes=ru&limit=1"
+    
+    # Получаем язык из сессии
+    lang = session.get('language', 'ru')
+    
+    # Убираем ограничение countrycodes=ru для мирового поиска
+    url = f"https://nominatim.openstreetmap.org/search?format=json&q={urllib.parse.quote(q)}&limit=5"
     req = urllib.request.Request(url, headers={
-        "User-Agent": "JunkCarMap/1.0 (research project)",
-        "Accept-Language": "ru",
+        "User-Agent": "JunkCarMap/1.0 (international platform)",
+        "Accept-Language": lang,
     })
     try:
         with urllib.request.urlopen(req, timeout=5) as resp:
