@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Статистика — Брошенная техника</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Condensed:wght@500;700;900&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin: 24px 0; }
+        .stat-card { background: var(--bg-secondary); padding: 20px; border-radius: 8px; border: 1px solid var(--border); }
+        .stat-value { font-size: 32px; font-weight: 700; color: var(--accent-yellow); font-family: 'Archivo Condensed', sans-serif; }
+        .stat-label { font-size: 14px; color: var(--text-secondary); margin-top: 8px; }
+        .chart-container { background: var(--bg-secondary); padding: 20px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 24px; }
+        .chart-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+        .top-list { list-style: none; padding: 0; }
+        .top-list li { padding: 12px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .top-list li:last-child { border-bottom: none; }
+        .status-breakdown { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 16px; }
+        .status-item { padding: 12px 20px; border-radius: 6px; font-weight: 600; }
+        .status-published { background: #4caf50; color: white; }
+        .status-hidden { background: #ff9800; color: white; }
+        .status-rejected { background: #f44336; color: white; }
+        .status-pending { background: #9e9e9e; color: white; }
+    </style>
+</head>
+<body class="admin-body">
+    <div class="admin-header">
+        <h1 class="admin-title">СТАТИСТИКА</h1>
+        <a href="{{ url_for('admin.dashboard') }}" class="admin-nav">Дашборд</a>
+        <a href="{{ url_for('admin.reports') }}" class="admin-nav">Отчёты</a>
+        <a href="{{ url_for('admin.stats') }}" class="admin-nav" style="border-color:var(--accent-yellow);color:var(--accent-yellow)">Статистика</a>
+        <a href="{{ url_for('admin.edit_content', slug='privacy') }}" class="admin-nav">Приватность</a>
+        <a href="{{ url_for('admin.edit_content', slug='contacts') }}" class="admin-nav">Контакты</a>
+        <a href="{{ url_for('admin.logout') }}" class="admin-nav admin-logout">Выйти</a>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ total }}</div>
+            <div class="stat-label">Всего находок</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ recent_7days }}</div>
+            <div class="stat-label">За последние 7 дней</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ by_category|length }}</div>
+            <div class="stat-label">Категорий</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ top_reported[0].reports_count if top_reported else 0 }}</div>
+            <div class="stat-label">Максимум жалоб</div>
+        </div>
+    </div>
+
+    <div class="status-breakdown">
+        {% for status, count in by_status.items() %}
+        <div class="status-item status-{{ status }}">
+            {{ status|upper }}: {{ count }}
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="chart-row" style="margin-top: 24px;">
+        <div class="chart-container">
+            <h3 style="margin-top:0; color: var(--accent-yellow);">По категориям</h3>
+            <canvas id="categoryChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <h3 style="margin-top:0; color: var(--accent-yellow);">Динамика (14 дней)</h3>
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <h3 style="margin-top:0; color: var(--accent-yellow);">Топ по жалобам</h3>
+        <ul class="top-list">
+            {% for f in top_reported %}
+            <li>
+                <span>{{ f.location_name or 'Без названия' }}</span>
+                <span style="color: var(--accent-yellow); font-weight: 600;">{{ f.reports_count }} жалоб</span>
+            </li>
+            {% endfor %}
+            {% if not top_reported %}
+            <li style="justify-content: center; color: var(--text-secondary);">Нет данных</li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <script>
+        const categoryData = {{ by_category | tojson }};
+        const trendData = {{ daily_stats | tojson }};
+
+        // Category Chart
+        const ctxCat = document.getElementById('categoryChart').getContext('2d');
+        new Chart(ctxCat, {
+            type: 'doughnut',
+            data: {
+                labels: categoryData.map(c => c[1]),
+                datasets: [{
+                    data: categoryData.map(c => c[2]),
+                    backgroundColor: ['#4caf50', '#ff9800', '#f44336', '#2196f3', '#9c27b0', '#00bcd4', '#ffeb3b', '#795548'],
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+
+        // Trend Chart
+        const dates = [...new Set(trendData.map(d => d[0]))];
+        const series = {};
+        trendData.forEach(d => {
+            const [date, status, count] = d;
+            if (!series[status]) series[status] = {};
+            series[status][date] = count;
+        });
+
+        const trendDatasets = Object.keys(series).map((status, i) => ({
+            label: status.toUpperCase(),
+            data: dates.map(d => series[status][d] || 0),
+            borderColor: ['#4caf50', '#ff9800', '#f44336', '#9e9e9e'][i % 4],
+            tension: 0.3,
+            fill: false
+        }));
+
+        const ctxTrend = document.getElementById('trendChart').getContext('2d');
+        new Chart(ctxTrend, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: trendDatasets
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                },
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
