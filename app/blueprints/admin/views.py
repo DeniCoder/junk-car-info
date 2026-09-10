@@ -1,19 +1,58 @@
-from flask import request, session, redirect, url_for, render_template, current_app, send_file, abort, jsonify
+from flask import request, session, redirect, url_for, render_template, current_app, send_file, abort, jsonify, flash
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import func
+import json
 
 from app.blueprints.admin import admin_bp
 from app.extensions import db, AdminRateLimiter
 from app.models.finding import Finding
 from app.models.category import Category
 from app.models.site_content import SiteContent
+from app.models.user import User
+from app.models.notification import Notification
+from app.models.appeal import Appeal
+from app.models.audit_log import AuditLog
 
 
 def check_admin():
-    token = session.get("admin_token")
-    if not token or token != current_app.config.get("ADMIN_TOKEN"):
-        return False
-    return True
+    # Check for legacy admin token OR new user-based admin
+    if session.get("admin_token") and session.get("admin_token") == current_app.config.get("ADMIN_TOKEN"):
+        return True
+    if session.get('user_id'):
+        user = User.query.get(session['user_id'])
+        if user and user.is_admin:
+            return True
+    return False
+
+
+def get_current_admin_user():
+    """Get the current admin user object for audit logging."""
+    if session.get('user_id'):
+        return User.query.get(session['user_id'])
+    return None
+
+
+def log_admin_action(action, entity_type, entity_id, old_value=None, new_value=None):
+    """Log admin action to audit trail."""
+    admin_user = get_current_admin_user()
+    ip_address = request.remote_addr
+    user_agent = request.headers.get('User-Agent', '')[:512]
+    
+    audit_entry = AuditLog(
+        admin_user_id=admin_user.id if admin_user else None,
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        old_value=json.dumps(old_value) if old_value else None,
+        new_value=json.dumps(new_value) if new_value else None,
+        ip_address=ip_address,
+        user_agent=user_agent
+    )
+    db.session.add(audit_entry)
+    try:
+        db.session.commit()
+    except:
+        db.session.rollback()
 
 
 @admin_bp.route("/login", methods=["GET", "POST"])
@@ -252,8 +291,9 @@ def toggle_status(finding_id):
     
     data = request.get_json(silent=True) or {}
     new_status = data.get("status")
+    admin_comment = data.get("admin_comment", "")
     
-    if new_status not in ["published", "hidden", "rejected", "pending"]:
+    if new_status not in ["published", "hidden", "rejected", "pending", "hidden_pending"]:
         return jsonify({"error": "invalid status"}), 400
     
     finding = Finding.query.get(finding_id)
@@ -261,15 +301,36 @@ def toggle_status(finding_id):
         return jsonify({"error": "not found"}), 404
     
     old_status = finding.status
+    old_data = {"status": old_status}
+    
     finding.status = new_status
     if new_status == "published" and not finding.published_at:
         finding.published_at = datetime.now(timezone.utc)
-    elif new_status in ["hidden", "rejected"] and not finding.hidden_at:
+    elif new_status in ["hidden", "rejected", "hidden_pending"] and not finding.hidden_at:
         finding.hidden_at = datetime.now(timezone.utc)
+    
+    # If hiding with comment, create notification for user
+    if new_status in ["hidden", "rejected"] and finding.user_id and admin_comment:
+        notification = Notification(
+            user_id=finding.user_id,
+            title="Статус жалобы изменён",
+            message=f"Ваша жалоба '{finding.location_name}' была {new_status}. Комментарий администратора: {admin_comment}",
+            notification_type="warning",
+            related_finding_id=finding.id
+        )
+        db.session.add(notification)
     
     db.session.commit()
     
-    # Log action for audit trail (could be extended with full logging system)
+    # Log action for audit trail
+    log_admin_action(
+        action="status_change",
+        entity_type="finding",
+        entity_id=finding_id,
+        old_value=old_data,
+        new_value={"status": new_status, "admin_comment": admin_comment}
+    )
+    
     current_app.logger.info(f"Admin changed finding {finding_id} status from {old_status} to {new_status}")
     
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -280,7 +341,228 @@ def toggle_status(finding_id):
             "new_status": new_status
         })
     
+    flash(f"Статус изменён на {new_status}", "success")
     return redirect(url_for("admin.reports"))
+
+
+@admin_bp.route("/appeals")
+def appeals_list():
+    """List all appeals pending review."""
+    if not check_admin():
+        return redirect(url_for("admin.login"))
+    
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
+    status_filter = request.args.get("status", "pending")
+    
+    q = Appeal.query
+    if status_filter:
+        q = q.filter_by(status=status_filter)
+    
+    pagination = q.order_by(Appeal.created_at.desc()).paginate(page=page, per_page=min(per_page, 100), error_out=False)
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        appeals_data = []
+        for appeal in pagination.items:
+            finding = Finding.query.get(appeal.finding_id)
+            user = User.query.get(appeal.user_id)
+            appeals_data.append({
+                "id": appeal.id,
+                "finding_id": appeal.finding_id,
+                "location_name": finding.location_name if finding else "N/A",
+                "username": user.username if user else "Unknown",
+                "reason": appeal.reason,
+                "status": appeal.status,
+                "created_at": appeal.created_at.strftime('%d.%m.%Y %H:%M') if appeal.created_at else "—",
+            })
+        return jsonify({
+            "appeals": appeals_data,
+            "total": pagination.total,
+            "page": pagination.page,
+            "pages": pagination.pages,
+        })
+    
+    return render_template("admin/appeals.html", 
+                          appeals=pagination.items, 
+                          pagination=pagination,
+                          current_status=status_filter)
+
+
+@admin_bp.route("/appeal/<int:appeal_id>/review", methods=["POST"])
+def review_appeal(appeal_id):
+    """Review an appeal and make a decision."""
+    if not check_admin():
+        return redirect(url_for("admin.login"))
+    
+    appeal = Appeal.query.get(appeal_id)
+    if not appeal:
+        return jsonify({"error": "not found"}), 404
+    
+    data = request.get_json(silent=True) or {}
+    decision = data.get("decision")  # approve or reject
+    admin_comment = data.get("admin_comment", "")
+    
+    if decision not in ["approve", "reject"]:
+        return jsonify({"error": "invalid decision"}), 400
+    
+    old_status = appeal.status
+    appeal.status = "approved" if decision == "approve" else "rejected"
+    appeal.admin_comment = admin_comment
+    appeal.reviewed_by = get_current_admin_user().id if get_current_admin_user() else None
+    appeal.reviewed_at = datetime.now(timezone.utc)
+    
+    # If approved, restore the finding
+    if decision == "approve":
+        finding = Finding.query.get(appeal.finding_id)
+        if finding:
+            finding.status = "published"
+            finding.is_archived = False
+            notification_msg = f"Ваша апелляция по объекту '{finding.location_name}' одобрена. Объект восстановлен."
+        else:
+            notification_msg = f"Ваша апелляция одобрена."
+    else:
+        finding = Finding.query.get(appeal.finding_id)
+        notification_msg = f"Ваша апелляция по объекту '{finding.location_name if finding else ''}' отклонена. Комментарий: {admin_comment}"
+    
+    # Notify user
+    if appeal.user_id:
+        notification = Notification(
+            user_id=appeal.user_id,
+            title="Решение по апелляции",
+            message=notification_msg,
+            notification_type="success" if decision == "approve" else "warning",
+            related_finding_id=appeal.finding_id
+        )
+        db.session.add(notification)
+    
+    db.session.commit()
+    
+    # Log action
+    log_admin_action(
+        action="appeal_review",
+        entity_type="appeal",
+        entity_id=str(appeal_id),
+        old_value={"status": old_status},
+        new_value={"status": appeal.status, "decision": decision, "admin_comment": admin_comment}
+    )
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({
+            "status": "success",
+            "appeal_id": appeal_id,
+            "decision": decision
+        })
+    
+    flash(f"Апелляция {decision}d", "success")
+    return redirect(url_for("admin.appeals_list"))
+
+
+@admin_bp.route("/audit-logs")
+def audit_logs():
+    """View audit logs of admin actions."""
+    if not check_admin():
+        return redirect(url_for("admin.login"))
+    
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 50, type=int)
+    action_filter = request.args.get("action", "")
+    entity_type_filter = request.args.get("entity_type", "")
+    
+    q = AuditLog.query
+    if action_filter:
+        q = q.filter_by(action=action_filter)
+    if entity_type_filter:
+        q = q.filter_by(entity_type=entity_type_filter)
+    
+    pagination = q.order_by(AuditLog.created_at.desc()).paginate(page=page, per_page=min(per_page, 100), error_out=False)
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        logs_data = []
+        for log in pagination.items:
+            admin = User.query.get(log.admin_user_id) if log.admin_user_id else None
+            logs_data.append({
+                "id": log.id,
+                "admin_username": admin.username if admin else "System",
+                "action": log.action,
+                "entity_type": log.entity_type,
+                "entity_id": log.entity_id,
+                "ip_address": log.ip_address,
+                "created_at": log.created_at.strftime('%d.%m.%Y %H:%M:%S') if log.created_at else "—",
+            })
+        return jsonify({
+            "logs": logs_data,
+            "total": pagination.total,
+            "page": pagination.page,
+            "pages": pagination.pages,
+        })
+    
+    return render_template("admin/audit_logs.html", 
+                          logs=pagination.items, 
+                          pagination=pagination,
+                          current_action=action_filter,
+                          current_entity_type=entity_type_filter)
+
+
+@admin_bp.route("/reports/csv")
+def reports_csv():
+    """Export findings to CSV."""
+    if not check_admin():
+        return redirect(url_for("admin.login"))
+    
+    category_id = request.args.get("category_id", type=int)
+    status = request.args.get("status", "")
+    date_from = request.args.get("date_from", "")
+    date_to = request.args.get("date_to", "")
+    search = request.args.get("search", "")
+    
+    q = Finding.query
+    if category_id:
+        q = q.filter_by(category_id=category_id)
+    if status:
+        q = q.filter_by(status=status)
+    if date_from:
+        try:
+            q = q.filter(Finding.created_at >= datetime.strptime(date_from, "%Y-%m-%d"))
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            q = q.filter(Finding.created_at <= datetime.strptime(date_to, "%Y-%m-%d").replace(hour=23, minute=59, second=59))
+        except ValueError:
+            pass
+    if search:
+        q = q.filter(Finding.location_name.ilike(f"%{search}%"))
+    
+    findings = q.order_by(Finding.created_at.desc()).all()
+    
+    import csv
+    from io import StringIO
+    
+    output = StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "Категория", "Место", "Статус", "Дата создания", "Жалоб", "Координаты"])
+    
+    for f in findings:
+        cat = db.session.get(Category, f.category_id)
+        cat_name = cat.title if cat else "N/A"
+        writer.writerow([
+            f.id,
+            cat_name,
+            f.location_name or "-",
+            f.status,
+            f.created_at.strftime("%d.%m.%Y %H:%M") if f.created_at else "-",
+            f.reports_count or 0,
+            f"{f.lat}, {f.lon}"
+        ])
+    
+    output.seek(0)
+    
+    return send_file(
+        output.getvalue().encode('utf-8-sig'),
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="findings_export.csv"
+    )
 
 
 @admin_bp.route("/stats", methods=["GET"])

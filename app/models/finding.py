@@ -13,17 +13,21 @@ class Finding(db.Model):
     location_name = db.Column(db.String(256), nullable=False, default="")
     lat = db.Column(db.Numeric(9, 6), nullable=False)
     lon = db.Column(db.Numeric(9, 6), nullable=False)
-    status = db.Column(db.String(16), nullable=False, default="pending", index=True)
+    status = db.Column(db.String(16), nullable=False, default="pending", index=True)  # pending, published, hidden, hidden_pending
     creator_fingerprint = db.Column(db.String(64), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     reports_count = db.Column(db.Integer, default=0, nullable=False)
     created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
     published_at = db.Column(db.DateTime, nullable=True)
     hidden_at = db.Column(db.DateTime, nullable=True)
+    removal_proof_photo = db.Column(db.String(256), nullable=True)  # фото-доказательство удаления
+    is_archived = db.Column(db.Boolean, default=False, nullable=False, index=True)  # архивировано ли
 
     photos = db.relationship(
         "FindingPhoto", backref="finding", lazy="dynamic", order_by="FindingPhoto.sort_order"
     )
     report_entries = db.relationship("Report", backref="finding", lazy="dynamic")
+    user = db.relationship("User", backref="findings")
 
     @property
     def confirmed_count_others(self):
@@ -58,6 +62,8 @@ class Finding(db.Model):
             "removed_count": removed,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "published_at": self.published_at.isoformat() if self.published_at else None,
+            "is_archived": self.is_archived,
+            "removal_proof_photo": self.removal_proof_photo,
         }
         if include_photos:
             d["photos"] = [p.to_dict() for p in self.photos.all()]
