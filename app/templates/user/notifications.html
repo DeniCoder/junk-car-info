@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Уведомления{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="{{ url_for('user.profile') }}" class="list-group-item list-group-item-action">Мои жалобы</a>
+                <a href="{{ url_for('user.notifications') }}" class="list-group-item list-group-item-action active">
+                    Уведомления 
+                    {% if unread_count > 0 %}
+                        <span class="badge bg-danger">{{ unread_count }}</span>
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>Уведомления</h2>
+                {% if unread_count > 0 %}
+                <form action="{{ url_for('user.mark_all_notifications_read') }}" method="POST">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">Отметить все как прочитанные</button>
+                </form>
+                {% endif %}
+            </div>
+            
+            {% if notifications %}
+                <div class="list-group">
+                    {% for notification in notifications %}
+                    <div class="list-group-item {% if not notification.is_read %}list-group-item-info{% endif %}">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ notification.title }}</h6>
+                            <small>{{ notification.created_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                        </div>
+                        <p class="mb-1">{{ notification.message }}</p>
+                        {% if not notification.is_read %}
+                        <form action="{{ url_for('user.mark_notification_read', notification_id=notification.id) }}" method="POST" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-outline-primary">Отметить как прочитанное</button>
+                        </form>
+                        {% else %}
+                        <small class="text-success">✓ Прочитано</small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-info">У вас нет уведомлений.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
