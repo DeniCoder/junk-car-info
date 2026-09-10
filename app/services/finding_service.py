@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from flask import current_app
 
@@ -11,6 +11,9 @@ from app.services.photo_service import process_image, check_magic_bytes, delete_
 from app.utils.validators import validate_lat_lon, validate_description, validate_location_name
 
 REMOVE_THRESHOLD = 3
+TRUSTED_REMOVE_THRESHOLD = 2
+SUSPICIOUS_WINDOW_MINUTES = 60
+SUSPICIOUS_VOTE_COUNT = 5
 
 
 class FindingService:
@@ -41,8 +44,7 @@ class FindingService:
             location_name=location_name,
             lat=lat,
             lon=lon,
-            status="published",
-            published_at=now,
+            status="pending",
             creator_fingerprint=creator_fingerprint,
         )
 
@@ -129,11 +131,24 @@ class FindingService:
         if recent:
             return None, "вы уже голосовали"
 
-        VoteRepository.create(finding_id, fingerprint, vote_type)
-        confirmed, removed = VoteRepository.count_by_type(finding_id)
+        suspicious_count = VoteRepository.count_votes_in_window(
+            finding_id, vote_type, SUSPICIOUS_WINDOW_MINUTES
+        )
+        is_trusted = suspicious_count < SUSPICIOUS_VOTE_COUNT
+
+        VoteRepository.create(finding_id, fingerprint, vote_type, is_trusted=is_trusted)
+        
+        confirmed, removed = VoteRepository.count_by_type(finding_id, trusted_only=False)
+        confirmed_trusted, removed_trusted = VoteRepository.count_by_type(finding_id, trusted_only=True)
         confirmed_others = VoteRepository.count_confirmed_excluding_creator(finding_id, finding.creator_fingerprint)
 
-        if removed >= REMOVE_THRESHOLD and finding.status != "hidden":
+        should_hide = False
+        if removed_trusted >= TRUSTED_REMOVE_THRESHOLD:
+            should_hide = True
+        elif removed >= REMOVE_THRESHOLD and suspicious_count < SUSPICIOUS_VOTE_COUNT:
+            should_hide = True
+
+        if should_hide and finding.status != "hidden":
             finding.status = "hidden"
             finding.hidden_at = datetime.now(timezone.utc)
             db.session.commit()
