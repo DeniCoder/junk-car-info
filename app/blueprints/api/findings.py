@@ -1,12 +1,14 @@
 import hashlib
 import traceback
+from functools import wraps
 
-from flask import request, jsonify, current_app
+from flask import request, jsonify, current_app, session
 from app.blueprints.api import api_bp
 from app.extensions import limiter
 from app.repositories.finding_repository import FindingRepository
 from app.repositories.category_repository import CategoryRepository
 from app.services.finding_service import FindingService
+from app.utils.security import validate_csrf_token
 
 
 def get_fingerprint():
@@ -14,8 +16,20 @@ def get_fingerprint():
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
+def csrf_protect(f):
+    """Decorator to protect API endpoints from CSRF attacks."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if request.method in ["POST", "PUT", "DELETE", "PATCH"]:
+            if not validate_csrf_token():
+                return jsonify({"error": "CSRF token missing or invalid"}), 403
+        return f(*args, **kwargs)
+    return decorated_function
+
+
 @api_bp.route("/findings", methods=["POST"])
 @limiter.limit("5/hour")
+@csrf_protect
 def create_finding():
     try:
         files = request.files.getlist("photos")
@@ -87,6 +101,7 @@ def get_finding(finding_id):
 
 @api_bp.route("/findings/<finding_id>/vote", methods=["POST"])
 @limiter.limit("30/hour")
+@csrf_protect
 def vote_finding(finding_id):
     data = request.get_json(silent=True) or {}
     vote_type = data.get("vote_type")
@@ -103,6 +118,7 @@ def vote_finding(finding_id):
 
 @api_bp.route("/findings/<finding_id>/report", methods=["POST"])
 @limiter.limit("20/hour")
+@csrf_protect
 def report_finding(finding_id):
     finding, error = FindingService.report_finding(finding_id)
     if error:
