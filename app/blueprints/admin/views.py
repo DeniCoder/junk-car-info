@@ -1,10 +1,8 @@
-from datetime import datetime, timedelta, timezone
-
 from flask import request, session, redirect, url_for, render_template, current_app, send_file, abort
 from sqlalchemy import func
 
 from app.blueprints.admin import admin_bp
-from app.extensions import db
+from app.extensions import db, AdminRateLimiter
 from app.models.finding import Finding
 from app.models.category import Category
 from app.models.site_content import SiteContent
@@ -18,14 +16,18 @@ def check_admin():
 
 
 @admin_bp.route("/login", methods=["GET", "POST"])
+@AdminRateLimiter.limit_login_attempts
+@AdminRateLimiter.reset_on_success
 def login():
     if request.method == "POST":
         token = request.form.get("token", "")
         if token and token == current_app.config.get("ADMIN_TOKEN"):
             session["admin_token"] = token
             return redirect(url_for("admin.dashboard"))
-        return render_template("admin/login.html", error="Invalid token")
-    return render_template("admin/login.html")
+        error = request.args.get("error") or "Invalid token"
+        return render_template("admin/login.html", error=error)
+    error = request.args.get("error")
+    return render_template("admin/login.html", error=error)
 
 
 @admin_bp.route("/logout")
