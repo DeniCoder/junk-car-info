@@ -28,12 +28,14 @@ def create_app(config_class=Config):
     from app.blueprints.admin import admin_bp
     from app.blueprints.media import media_bp
     from app.blueprints.user import user_bp
+    from app.blueprints.auth import auth_bp
 
     app.register_blueprint(web_bp)
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(admin_bp, url_prefix="/admin")
     app.register_blueprint(media_bp, url_prefix="/media")
     app.register_blueprint(user_bp, url_prefix="/user")
+    app.register_blueprint(auth_bp, url_prefix="/auth")
 
     from app.utils.security import csrf_init
     csrf_init(app)

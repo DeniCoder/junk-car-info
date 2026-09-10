@@ -9,15 +9,48 @@ from app.models.appeal import Appeal
 from app.extensions import db
 from functools import wraps
 
+# Поддерживаемые языки
+SUPPORTED_LANGUAGES = {
+    'ru': 'Русский',
+    'en': 'English',
+    'zh': '中文',
+    'es': 'Español'
+}
+
 
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             flash('Пожалуйста, войдите для доступа к этой странице.', 'warning')
-            return redirect(url_for('web.login'))
+            return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated_function
+
+
+@web_bp.route("/set-language/<lang_code>")
+def set_language(lang_code):
+    """Установка языка пользователя"""
+    if lang_code in SUPPORTED_LANGUAGES:
+        session['language'] = lang_code
+        # Сохраняем в cookie на 1 год
+        response = redirect(request.referrer or url_for('web.index'))
+        response.set_cookie('language', lang_code, max_age=31536000)
+        return response
+    return redirect(url_for('web.index'))
+
+
+@web_bp.before_app_request
+def load_language():
+    """Загрузка языка из cookie или session"""
+    if 'language' not in session:
+        lang = request.cookies.get('language')
+        if lang and lang in SUPPORTED_LANGUAGES:
+            session['language'] = lang
+        else:
+            # Определяем язык браузера
+            browser_lang = request.accept_languages.best_match(SUPPORTED_LANGUAGES.keys())
+            session['language'] = browser_lang or 'ru'
 
 
 @web_bp.route("/")
@@ -206,3 +239,21 @@ def submit_appeal(finding_id):
     db.session.commit()
     flash("Апелляция успешно подана.", "success")
     return redirect(url_for('web.profile'))
+
+
+@web_bp.route("/privacy-policy")
+def privacy():
+    """Политика конфиденциальности (152-ФЗ РФ)"""
+    return render_template("privacy.html")
+
+
+@web_bp.route("/terms")
+def terms():
+    """Условия использования"""
+    return render_template("terms.html")
+
+
+@web_bp.route("/cookie-policy")
+def cookie_policy():
+    """Политика использования cookie"""
+    return render_template("cookie_policy.html")

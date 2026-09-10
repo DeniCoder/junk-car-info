@@ -1,8 +1,9 @@
 from app.extensions import db
 from datetime import datetime
+from flask_login import UserMixin
 
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -18,6 +19,9 @@ class User(db.Model):
     findings = db.relationship("Finding", backref="creator", lazy="dynamic", foreign_keys="Finding.user_id")
     notifications = db.relationship("Notification", backref="user", lazy="dynamic", order_by="Notification.created_at.desc()")
     appeals = db.relationship("Appeal", backref="user", lazy="dynamic", foreign_keys="Appeal.user_id")
+
+    def get_id(self):
+        return str(self.id)
 
     def set_password(self, password):
         from werkzeug.security import generate_password_hash
