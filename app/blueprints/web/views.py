@@ -71,7 +71,20 @@ def finding_detail(finding_id):
 
 @web_bp.route("/privacy")
 def privacy():
-    return render_template("privacy.html")
+    """Политика конфиденциальности - редирект на русскую версию"""
+    return redirect(url_for('web.privacy_ru'))
+
+
+@web_bp.route("/privacy/ru")
+def privacy_ru():
+    """Политика конфиденциальности для РФ (152-ФЗ)"""
+    return render_template("legal/privacy_ru.html")
+
+
+@web_bp.route("/privacy/en")
+def privacy_en():
+    """Privacy Policy for EU/International (GDPR)"""
+    return render_template("legal/privacy_en.html")
 
 
 @web_bp.route("/contacts")
@@ -242,18 +255,25 @@ def submit_appeal(finding_id):
 
 
 @web_bp.route("/privacy-policy")
-def privacy():
-    """Политика конфиденциальности (152-ФЗ РФ)"""
-    return render_template("privacy.html")
+def privacy_policy():
+    """Политика конфиденциальности (152-ФЗ РФ) - редирект"""
+    return redirect(url_for('web.privacy_ru'))
 
 
 @web_bp.route("/terms")
 def terms():
-    """Условия использования"""
-    return render_template("terms.html")
+    """Условия использования - редирект"""
+    return redirect(url_for('web.terms_ru'))
+
+
+@web_bp.route("/terms/ru")
+def terms_ru():
+    """Условия использования для РФ"""
+    return render_template("legal/terms_ru.html")
 
 
 @web_bp.route("/cookie-policy")
 def cookie_policy():
     """Политика использования cookie"""
-    return render_template("cookie_policy.html")
+    # Временная заглушка, будет создан отдельный файл
+    return render_template("legal/cookie_policy.html")

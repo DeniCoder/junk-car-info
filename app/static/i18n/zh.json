@@ -1,0 +1,67 @@
+{
+  "cookies": {
+    "title": "Cookie 政策",
+    "description": "我们使用 Cookie 来改善您的网站体验。",
+    "necessary": {
+      "title": "必要 Cookie",
+      "description": "这些 Cookie 对网站的正常运行至关重要。",
+      "examples": ["session_id", "csrf_token", "language_preference"]
+    },
+    "analytics": {
+      "title": "分析 Cookie",
+      "description": "这些 Cookie 帮助我们了解访问者如何与网站互动。",
+      "examples": ["_ga", "_gid"]
+    },
+    "accept": "全部接受",
+    "decline": "拒绝",
+    "settings": "设置",
+    "more_info": "更多信息"
+  },
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "cancel": "取消",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "close": "关闭",
+    "search": "搜索",
+    "back": "返回"
+  },
+  "map": {
+    "title": "废弃车辆地图",
+    "search_placeholder": "搜索位置...",
+    "total_findings": "总发现数",
+    "filter_all": "全部",
+    "legend": "图例",
+    "status_confirmed": "在现场",
+    "status_removed": "已移除",
+    "status_pending": "待处理"
+  },
+  "auth": {
+    "login": "登录",
+    "register": "注册",
+    "logout": "退出",
+    "username": "用户名",
+    "email": "电子邮件",
+    "password": "密码",
+    "confirm_password": "确认密码",
+    "remember_me": "记住我",
+    "forgot_password": "忘记密码？",
+    "no_account": "没有账户？",
+    "have_account": "已有账户？",
+    "privacy_consent": "我同意处理个人数据"
+  },
+  "finding": {
+    "new_finding": "新发现",
+    "location": "位置",
+    "category": "类别",
+    "description": "描述",
+    "add_photos": "添加照片",
+    "submit": "提交",
+    "confirm": "确认",
+    "report": "举报",
+    "details": "详情"
+  }
+}
