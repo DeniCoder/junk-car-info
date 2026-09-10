@@ -1,0 +1,58 @@
+{# Footer компонент с ссылками #}
+<footer class="site-footer bg-dark text-light py-4 mt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4 mb-3 mb-md-0">
+                <h5>Брошенная Техника</h5>
+                <p class="text-muted">Международный сервис поиска брошенной техники</p>
+                <p class="text-muted small">
+                    🌐 Доступно на: Русский, English, 中文, Español
+                </p>
+            </div>
+            
+            <div class="col-md-4 mb-3 mb-md-0">
+                <h5>Навигация</h5>
+                <ul class="list-unstyled">
+                    <li><a href="{{ url_for('web.index') }}" class="text-muted text-decoration-none">Главная</a></li>
+                    <li><a href="{{ url_for('web.contacts') }}" class="text-muted text-decoration-none">Контакты</a></li>
+                    {% if current_user.is_authenticated %}
+                        <li><a href="{{ url_for('web.profile') }}" class="text-muted text-decoration-none">Профиль</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+            
+            <div class="col-md-4">
+                <h5>Правовая информация</h5>
+                <ul class="list-unstyled">
+                    <li><a href="{{ url_for('web.privacy_policy') }}" class="text-muted text-decoration-none">Политика конфиденциальности</a></li>
+                    <li><a href="{{ url_for('web.terms') }}" class="text-muted text-decoration-none">Условия использования</a></li>
+                    <li><a href="{{ url_for('web.cookie_policy') }}" class="text-muted text-decoration-none">Cookie Policy</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <hr class="bg-secondary my-4">
+        
+        <div class="row">
+            <div class="col-md-6 text-center text-md-left">
+                <p class="text-muted mb-0">&copy; 2024 Брошенная Техника. Все права защищены.</p>
+            </div>
+            <div class="col-md-6 text-center text-md-right">
+                <p class="text-muted mb-0">
+                    Соответствует: 152-ФЗ (РФ), GDPR (ЕС), PIPL (Китай)
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<style>
+.site-footer {
+    bottom: 0;
+    width: 100%;
+}
+.site-footer a:hover {
+    color: #fff !important;
+    text-decoration: underline !important;
+}
+</style>

@@ -1,0 +1,28 @@
+{# Переключатель языка #}
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        {% if session.get('language') == 'en' or (not session.get('language') and request.accept_languages.best_match(['ru', 'en', 'zh', 'es']) == 'en') %}
+            🇬🇧 EN
+        {% elif session.get('language') == 'zh' or (not session.get('language') and request.accept_languages.best_match(['ru', 'en', 'zh', 'es']) == 'zh') %}
+            🇨🇳 中文
+        {% elif session.get('language') == 'es' or (not session.get('language') and request.accept_languages.best_match(['ru', 'en', 'zh', 'es']) == 'es') %}
+            🇪🇸 ES
+        {% else %}
+            🇷🇺 RU
+        {% endif %}
+    </a>
+    <div class="dropdown-menu dropdown-menu-right" aria-labelledby="languageDropdown">
+        <a class="dropdown-item" href="{{ url_for('web.set_language', lang_code='ru') }}">
+            🇷🇺 Русский
+        </a>
+        <a class="dropdown-item" href="{{ url_for('web.set_language', lang_code='en') }}">
+            🇬🇧 English
+        </a>
+        <a class="dropdown-item" href="{{ url_for('web.set_language', lang_code='zh') }}">
+            🇨🇳 中文
+        </a>
+        <a class="dropdown-item" href="{{ url_for('web.set_language', lang_code='es') }}">
+            🇪🇸 Español
+        </a>
+    </div>
+</li>
