@@ -1,4 +1,5 @@
-from flask import request, session, redirect, url_for, render_template, current_app, send_file, abort
+from flask import request, session, redirect, url_for, render_template, current_app, send_file, abort, jsonify
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import func
 
 from app.blueprints.admin import admin_bp
@@ -70,6 +71,7 @@ def reports():
     date_to = request.args.get("date_to", "")
     search = request.args.get("search", "")
     page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
 
     q = Finding.query
 
@@ -91,14 +93,40 @@ def reports():
     if search:
         q = q.filter(Finding.location_name.ilike(f"%{search}%"))
 
-    pagination = q.order_by(Finding.created_at.desc()).paginate(page=page, per_page=20, error_out=False)
+    pagination = q.order_by(Finding.created_at.desc()).paginate(page=page, per_page=min(per_page, 100), error_out=False)
     categories = Category.query.all()
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        findings_data = []
+        for f in pagination.items:
+            cat_title = f.category.title if f.category else "—"
+            thumb_url = f.photos.first().thumb_url if f.photos.first() else None
+            findings_data.append({
+                "id": f.id,
+                "short_id": f.id[:8],
+                "category": cat_title,
+                "location_name": f.location_name or "—",
+                "status": f.status,
+                "created_at": f.created_at.strftime('%d.%m.%Y %H:%M') if f.created_at else "—",
+                "reports_count": f.reports_count or 0,
+                "thumb_url": thumb_url,
+                "detail_url": url_for('finding_detail', finding_id=f.id),
+            })
+        return jsonify({
+            "findings": findings_data,
+            "total": pagination.total,
+            "page": pagination.page,
+            "pages": pagination.pages,
+            "has_next": pagination.has_next,
+            "has_prev": pagination.has_prev,
+        })
 
     return render_template("admin/reports.html",
         findings=pagination.items, pagination=pagination, categories=categories,
         filtered_total=pagination.total,
         f_category_id=category_id or "", f_status=status,
-        f_date_from=date_from, f_date_to=date_to, f_search=search)
+        f_date_from=date_from, f_date_to=date_to, f_search=search,
+        current_per_page=per_page)
 
 
 @admin_bp.route("/reports/pdf")
@@ -209,4 +237,98 @@ def delete(finding_id):
 
     from app.services.finding_service import FindingService
     FindingService.delete_finding(finding_id)
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({"status": "deleted", "finding_id": finding_id})
+    
     return redirect(url_for("admin.reports"))
+
+
+@admin_bp.route("/finding/<finding_id>/toggle_status", methods=["POST"])
+def toggle_status(finding_id):
+    """Admin endpoint to manually change finding status (publish/hide/reject)."""
+    if not check_admin():
+        return redirect(url_for("admin.login"))
+    
+    data = request.get_json(silent=True) or {}
+    new_status = data.get("status")
+    
+    if new_status not in ["published", "hidden", "rejected", "pending"]:
+        return jsonify({"error": "invalid status"}), 400
+    
+    finding = Finding.query.get(finding_id)
+    if not finding:
+        return jsonify({"error": "not found"}), 404
+    
+    old_status = finding.status
+    finding.status = new_status
+    if new_status == "published" and not finding.published_at:
+        finding.published_at = datetime.now(timezone.utc)
+    elif new_status in ["hidden", "rejected"] and not finding.hidden_at:
+        finding.hidden_at = datetime.now(timezone.utc)
+    
+    db.session.commit()
+    
+    # Log action for audit trail (could be extended with full logging system)
+    current_app.logger.info(f"Admin changed finding {finding_id} status from {old_status} to {new_status}")
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({
+            "status": "success",
+            "finding_id": finding_id,
+            "old_status": old_status,
+            "new_status": new_status
+        })
+    
+    return redirect(url_for("admin.reports"))
+
+
+@admin_bp.route("/stats", methods=["GET"])
+def stats():
+    """Enhanced statistics endpoint with detailed breakdown."""
+    if not check_admin():
+        return redirect(url_for("admin.login"))
+    
+    # Total counts by status
+    total = Finding.query.count()
+    status_counts = db.session.query(
+        Finding.status, func.count(Finding.id)
+    ).group_by(Finding.status).all()
+    
+    # Recent activity (last 7 days)
+    seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    recent_findings = Finding.query.filter(Finding.created_at >= seven_days_ago).count()
+    
+    # By category breakdown
+    by_category = db.session.query(
+        Category.id, Category.title, func.count(Finding.id)
+    ).join(Finding, Finding.category_id == Category.id
+    ).group_by(Category.id, Category.title).all()
+    
+    # Status trend (last 14 days)
+    fourteen_days_ago = datetime.now(timezone.utc) - timedelta(days=14)
+    daily_stats = db.session.query(
+        func.date(Finding.created_at), Finding.status, func.count(Finding.id)
+    ).filter(Finding.created_at >= fourteen_days_ago
+    ).group_by(func.date(Finding.created_at), Finding.status).order_by(func.date(Finding.created_at)).all()
+    
+    # Top reported findings
+    top_reported = Finding.query.order_by(Finding.reports_count.desc()).limit(10).all()
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return jsonify({
+            "total": total,
+            "by_status": {status: count for status, count in status_counts},
+            "recent_7days": recent_findings,
+            "by_category": [{"id": c[0], "title": c[1], "count": c[2]} for c in by_category],
+            "daily_trend": [{"date": str(d), "status": s, "count": c} for d, s, c in daily_stats],
+            "top_reported": [{"id": f.id, "location": f.location_name, "reports": f.reports_count} for f in top_reported],
+        })
+    
+    return render_template("admin/stats.html",
+        total=total,
+        by_status=dict(status_counts),
+        recent_7days=recent_findings,
+        by_category=by_category,
+        daily_stats=daily_stats,
+        top_reported=top_reported)
