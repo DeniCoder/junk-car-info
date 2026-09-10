@@ -27,7 +27,7 @@ class Finding(db.Model):
         "FindingPhoto", backref="finding", lazy="dynamic", order_by="FindingPhoto.sort_order"
     )
     report_entries = db.relationship("Report", backref="finding", lazy="dynamic")
-    user = db.relationship("User", backref="findings")
+    user = db.relationship("User", foreign_keys=[user_id], back_populates="findings")
 
     @property
     def confirmed_count_others(self):

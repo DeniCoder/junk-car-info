@@ -1,11 +1,16 @@
 ```
+# Compiled and build artifacts
+*.pyc
+__pycache__/
+
 # Dependencies
-julia-*/
-zig*/
+.venv/
+venv/
 
 # Logs and temp files
 *.log
 *.tmp
+*.swp
 
 # Environment
 .env
@@ -16,58 +21,16 @@ zig*/
 .vscode/
 .idea/
 
-# Compiled and build artifacts
-*.pyc
-__pycache__/
-*.o
-*.obj
-*.exe
-*.dll
-*.so
-*.a
-*.out
-dist/
-build/
-target/
-
-# Package managers
-node_modules/
-.venv/
-venv/
-.mypy_cache/
-.pytest_cache/
-.gradle/
-
-# System files
-.DS_Store
-Thumbs.db
-
-# Coverage
+# Coverage reports
+.coverage
 coverage/
 htmlcov/
-.coverage
 
-# Compressed files
-*.zip
-*.gz
-*.tar
-*.tgz
-*.bz2
-*.xz
-*.7z
-*.rar
-*.zst
-*.lz4
-*.lzh
-*.cab
-*.arj
-*.rpm
-*.deb
-*.Z
-*.lz
-*.lzo
-*.tar.gz
-*.tar.bz2
-*.tar.xz
-*.tar.zst
+# Python specific
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg-info/
 ```
