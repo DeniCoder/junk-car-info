@@ -1,0 +1,130 @@
+# Translations template for Junk Car Info Check
+# Copyright (C) 2024 Junk Car Info
+# This file is distributed under the same license as the PROJECT.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: app/templates/base.html:6
+msgid "Брошенная техника — народная карта"
+msgstr ""
+
+#: app/templates/base.html:7
+msgid "Интерактивная карта брошенной техники. Отмечай и находи заброшенные автомобили, тракторы, прицепы у дорог."
+msgstr ""
+
+#: app/templates/base.html:22
+msgid "Карта"
+msgstr ""
+
+#: app/templates/base.html:23
+msgid "Контакты"
+msgstr ""
+
+#: app/templates/base.html:25
+msgid "Админ-панель"
+msgstr ""
+
+#: app/templates/base.html:49
+msgid "Выйти"
+msgstr ""
+
+#: app/templates/base.html:53
+msgid "Войти"
+msgstr ""
+
+#: app/templates/base.html:54
+msgid "Регистрация"
+msgstr ""
+
+#: app/templates/base.html:68
+msgid "Политика конфиденциальности"
+msgstr ""
+
+#: app/templates/base.html:69
+msgid "Условия использования"
+msgstr ""
+
+#: app/templates/base.html:72
+msgid "© 2024 Брошенная Техника. Все права защищены."
+msgstr ""
+
+#: app/templates/base.html:78
+msgid "Мы используем файлы cookie для улучшения работы сайта. Продолжая использовать сайт, вы соглашаетесь с нашей"
+msgstr ""
+
+#: app/templates/base.html:79
+msgid "политикой cookie"
+msgstr ""
+
+#: app/templates/base.html:82
+msgid "Принять все"
+msgstr ""
+
+#: app/templates/base.html:83
+msgid "Отклонить"
+msgstr ""
+
+#: app/templates/index.html:10
+msgid "Добавить технику"
+msgstr ""
+
+#: app/templates/index.html:15
+msgid "Найдено объектов"
+msgstr ""
+
+#: app/templates/index.html:20
+msgid "Поиск по карте..."
+msgstr ""
+
+#: app/auth/views.py:15
+msgid "Пожалуйста, войдите для доступа к этой странице."
+msgstr ""
+
+#: app/auth/views.py:25
+msgid "Добро пожаловать"
+msgstr ""
+
+#: app/auth/views.py:30
+msgid "Неверное имя пользователя или пароль."
+msgstr ""
+
+#: app/auth/views.py:45
+msgid "Все поля обязательны для заполнения."
+msgstr ""
+
+#: app/auth/views.py:50
+msgid "Пароли не совпадают."
+msgstr ""
+
+#: app/auth/views.py:55
+msgid "Пароль должен быть не менее 6 символов."
+msgstr ""
+
+#: app/auth/views.py:60
+msgid "Имя пользователя уже занято."
+msgstr ""
+
+#: app/auth/views.py:65
+msgid "Email уже зарегистрирован."
+msgstr ""
+
+#: app/auth/views.py:75
+msgid "Регистрация успешна! Теперь вы можете войти."
+msgstr ""
+
+#: app/auth/views.py:85
+msgid "Вы вышли из системы."
+msgstr ""
+

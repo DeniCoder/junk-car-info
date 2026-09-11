@@ -6,6 +6,10 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "postgresql://localhost:5432/junk_car_info")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Настройки интернационализации (i18n)
+    BABEL_DEFAULT_LOCALE = os.getenv("BABEL_DEFAULT_LOCALE", "ru")
+    LANGUAGES = ['ru', 'en', 'zh', 'es']
+
     MEDIA_ROOT = os.path.abspath(os.getenv("MEDIA_ROOT", "./media"))
     KEEP_ORIGINAL = os.getenv("KEEP_ORIGINAL", "false").lower() == "true"
 

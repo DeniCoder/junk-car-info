@@ -1,0 +1,132 @@
+# English translations for Junk Car Info Check
+# Copyright (C) 2024 Junk Car Info
+# This file is distributed under the same license as the PROJECT.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"Language-Team: en <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: app/templates/base.html:6
+msgid "Брошенная техника — народная карта"
+msgstr "Abandoned Vehicles — People's Map"
+
+#: app/templates/base.html:7
+msgid "Интерактивная карта брошенной техники. Отмечай и находи заброшенные автомобили, тракторы, прицепы у дорог."
+msgstr "Interactive map of abandoned vehicles. Mark and find abandoned cars, tractors, trailers near roads."
+
+#: app/templates/base.html:22
+msgid "Карта"
+msgstr "Map"
+
+#: app/templates/base.html:23
+msgid "Контакты"
+msgstr "Contacts"
+
+#: app/templates/base.html:25
+msgid "Админ-панель"
+msgstr "Admin Panel"
+
+#: app/templates/base.html:49
+msgid "Выйти"
+msgstr "Logout"
+
+#: app/templates/base.html:53
+msgid "Войти"
+msgstr "Login"
+
+#: app/templates/base.html:54
+msgid "Регистрация"
+msgstr "Register"
+
+#: app/templates/base.html:68
+msgid "Политика конфиденциальности"
+msgstr "Privacy Policy"
+
+#: app/templates/base.html:69
+msgid "Условия использования"
+msgstr "Terms of Use"
+
+#: app/templates/base.html:72
+msgid "© 2024 Брошенная Техника. Все права защищены."
+msgstr "© 2024 Abandoned Vehicles. All rights reserved."
+
+#: app/templates/base.html:78
+msgid "Мы используем файлы cookie для улучшения работы сайта. Продолжая использовать сайт, вы соглашаетесь с нашей"
+msgstr "We use cookies to improve site performance. By continuing to use the site, you agree to our"
+
+#: app/templates/base.html:79
+msgid "политикой cookie"
+msgstr "cookie policy"
+
+#: app/templates/base.html:82
+msgid "Принять все"
+msgstr "Accept All"
+
+#: app/templates/base.html:83
+msgid "Отклонить"
+msgstr "Decline"
+
+#: app/templates/index.html:10
+msgid "Добавить технику"
+msgstr "Add Vehicle"
+
+#: app/templates/index.html:15
+msgid "Найдено объектов"
+msgstr "Objects Found"
+
+#: app/templates/index.html:20
+msgid "Поиск по карте..."
+msgstr "Search on map..."
+
+#: app/auth/views.py:15
+msgid "Пожалуйста, войдите для доступа к этой странице."
+msgstr "Please log in to access this page."
+
+#: app/auth/views.py:25
+msgid "Добро пожаловать"
+msgstr "Welcome"
+
+#: app/auth/views.py:30
+msgid "Неверное имя пользователя или пароль."
+msgstr "Invalid username or password."
+
+#: app/auth/views.py:45
+msgid "Все поля обязательны для заполнения."
+msgstr "All fields are required."
+
+#: app/auth/views.py:50
+msgid "Пароли не совпадают."
+msgstr "Passwords do not match."
+
+#: app/auth/views.py:55
+msgid "Пароль должен быть не менее 6 символов."
+msgstr "Password must be at least 6 characters."
+
+#: app/auth/views.py:60
+msgid "Имя пользователя уже занято."
+msgstr "Username is already taken."
+
+#: app/auth/views.py:65
+msgid "Email уже зарегистрирован."
+msgstr "Email is already registered."
+
+#: app/auth/views.py:75
+msgid "Регистрация успешна! Теперь вы можете войти."
+msgstr "Registration successful! You can now log in."
+
+#: app/auth/views.py:85
+msgid "Вы вышли из системы."
+msgstr "You have logged out."
+

@@ -3,7 +3,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-from flask import Flask
+from flask import Flask, request, session
+from flask_babel import Babel, lazy_gettext as _l
 
 from app.config import Config
 from app.extensions import db, migrate, limiter, talisman
@@ -12,6 +13,21 @@ from app.extensions import db, migrate, limiter, talisman
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    # Инициализация Flask-Babel для интернационализации
+    babel = Babel(app)
+    
+    def get_locale():
+        """Определяет язык пользователя на основе приоритетов:
+        1. Язык в сессии (выбранный пользователем)
+        2. Язык браузера из Accept-Language header
+        3. Язык по умолчанию из конфига
+        """
+        if 'language' in session:
+            return session['language']
+        return request.accept_languages.best_match(app.config.get('LANGUAGES', ['ru']))
+    
+    babel.init_app(app, locale_selector=get_locale)
 
     db.init_app(app)
     migrate.init_app(app, db)
