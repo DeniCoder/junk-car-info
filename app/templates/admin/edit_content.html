@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page.title }} — Edit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Condensed:wght@500;700;900&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="admin-body">
+    <div class="admin-header">
+        <h1 class="admin-title">РЕДАКТОР КОНТЕНТА</h1>
+        <a href="{{ url_for('admin.dashboard') }}" class="admin-nav">Дашборд</a>
+        <a href="{{ url_for('admin.reports') }}" class="admin-nav">Отчёты</a>
+        <a href="{{ url_for('admin.edit_content', slug='privacy') }}" class="admin-nav">Приватность</a>
+        <a href="{{ url_for('admin.edit_content', slug='contacts') }}" class="admin-nav">Контакты</a>
+        <a href="{{ url_for('admin.logout') }}" class="admin-nav admin-logout">Выйти</a>
+    </div>
+
+    <form method="POST" class="admin-editor">
+        <label>Заголовок</label>
+        <input type="text" name="title" value="{{ page.title }}">
+
+        <label>Контент</label>
+        <div class="editor-hint">Поддерживается Markdown: ## заголовки, - списки, **жирный**, обычный текст = параграф</div>
+        <textarea name="content_md">{{ page.content_md }}</textarea>
+
+        <button type="submit" class="admin-save-btn">СОХРАНИТЬ</button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Брошенная техника — карта{% endblock %}
+{% block body %}
+<div class="noscript-page">
+    <h1 class="noscript-title">БРОШЕННАЯ ТЕХНИКА</h1>
+    <p class="noscript-subtitle">народный архив машин у дороги</p>
+    <p class="noscript-count">Найдено {{ total_findings }} находок</p>
+    <p class="noscript-hint">Включите JavaScript для интерактивной карты.</p>
+    <a href="/" class="noscript-link">Попробовать с JS</a>
+</div>
+{% endblock %}

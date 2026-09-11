@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Брошенная техника</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Condensed:wght@500;700;900&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="admin-body">
+    <div class="admin-header">
+        <h1 class="admin-title">ДАШБОРД</h1>
+        <a href="{{ url_for('admin.dashboard') }}" class="admin-nav">Дашборд</a>
+        <a href="{{ url_for('admin.reports') }}" class="admin-nav">Отчёты</a>
+        <a href="{{ url_for('admin.edit_content', slug='privacy') }}" class="admin-nav">Приватность</a>
+        <a href="{{ url_for('admin.edit_content', slug='contacts') }}" class="admin-nav">Контакты</a>
+        <a href="{{ url_for('admin.logout') }}" class="admin-nav admin-logout">Выйти</a>
+    </div>
+
+    <div class="admin-stats-grid">
+        <div class="admin-stat-card">
+            <div class="admin-stat-value">{{ total }}</div>
+            <div class="admin-stat-label">Всего находок</div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-value" style="color:var(--accent-moss)">{{ published }}</div>
+            <div class="admin-stat-label">Опубликовано</div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-value" style="color:var(--accent-yellow)">{{ hidden }}</div>
+            <div class="admin-stat-label">Скрыто</div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-value" style="color:var(--accent-rust)">{{ rejected }}</div>
+            <div class="admin-stat-label">Отклонено</div>
+        </div>
+        <div class="admin-stat-card">
+            <div class="admin-stat-value">{{ recent_count }}</div>
+            <div class="admin-stat-label">За 30 дней</div>
+        </div>
+    </div>
+
+    <div class="admin-section">
+        <div class="admin-section-title">ПО ТИПАМ ТЕХНИКИ</div>
+        <table class="admin-cat-table">
+            {% for cat_name, cat_count in by_category %}
+            <tr>
+                <td>{{ cat_name }}</td>
+                <td>{{ cat_count }}</td>
+            </tr>
+            {% endfor %}
+            {% if not by_category %}
+            <tr><td colspan="2" style="color:var(--text-secondary)">Нет данных</td></tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <div class="admin-section">
+        <a href="{{ url_for('admin.reports') }}" class="admin-nav" style="display:inline-block">
+            Открыть полные отчёты →
+        </a>
+    </div>
+</body>
+</html>

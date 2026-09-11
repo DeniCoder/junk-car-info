@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Личный кабинет{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="list-group">
+                <a href="{{ url_for('user.profile') }}" class="list-group-item list-group-item-action active">Мои жалобы</a>
+                <a href="{{ url_for('user.notifications') }}" class="list-group-item list-group-item-action">
+                    Уведомления 
+                    {% if unread_count > 0 %}
+                        <span class="badge bg-danger">{{ unread_count }}</span>
+                    {% endif %}
+                </a>
+            </div>
+        </div>
+        <div class="col-md-9">
+            <h2>Мои жалобы</h2>
+            {% if findings %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Фото</th>
+                                <th>Описание</th>
+                                <th>Статус</th>
+                                <th>Дата</th>
+                                <th>Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for finding in findings %}
+                            <tr>
+                                <td>{{ finding.id }}</td>
+                                <td>
+                                    {% if finding.photo %}
+                                        <img src="{{ finding.photo }}" alt="Фото" style="width: 50px; height: 50px; object-fit: cover;" class="rounded">
+                                    {% else %}
+                                        <span class="text-muted">Нет фото</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ finding.description[:50] }}...</td>
+                                <td>
+                                    {% if finding.status == 'pending' %}
+                                        <span class="badge bg-warning">На проверке</span>
+                                    {% elif finding.status == 'published' %}
+                                        <span class="badge bg-success">Опубликовано</span>
+                                    {% elif finding.status == 'rejected' %}
+                                        <span class="badge bg-danger">Отклонено</span>
+                                    {% elif finding.status == 'hidden' %}
+                                        <span class="badge bg-secondary">Скрыто</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ finding.created_at.strftime('%d.%m.%Y') }}</td>
+                                <td>
+                                    {% if finding.status in ['rejected', 'hidden'] and not finding.appeal %}
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#appealModal{{ finding.id }}">
+                                            Подать апелляцию
+                                        </button>
+                                        
+                                        <!-- Modal Appeal -->
+                                        <div class="modal fade" id="appealModal{{ finding.id }}" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <form action="{{ url_for('user.submit_appeal', finding_id=finding.id) }}" method="POST">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Апелляция на решение #{{ finding.id }}</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <p>Если вы считаете, что решение было ошибочным, опишите почему.</p>
+                                                            <textarea name="reason" class="form-control" rows="4" required></textarea>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                                            <button type="submit" class="btn btn-primary">Отправить</button>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% elif finding.appeal %}
+                                        <span class="badge bg-info">Апелляция подана</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info">У вас пока нет созданных жалоб.</div>
+                <a href="{{ url_for('web.index') }}" class="btn btn-primary">Создать первую жалобу</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

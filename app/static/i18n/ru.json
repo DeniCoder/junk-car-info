@@ -1,0 +1,67 @@
+{
+  "cookies": {
+    "title": "Политика Cookie",
+    "description": "Мы используем файлы cookie для улучшения работы сайта.",
+    "necessary": {
+      "title": "Необходимые Cookies",
+      "description": "Эти файлы необходимы для работы сайта.",
+      "examples": ["session_id", "csrf_token", "language_preference"]
+    },
+    "analytics": {
+      "title": "Аналитические Cookies",
+      "description": "Эти файлы помогают нам понимать, как пользователи взаимодействуют с сайтом.",
+      "examples": ["_ga", "_gid"]
+    },
+    "accept": "Принять все",
+    "decline": "Отклонить",
+    "settings": "Настройки",
+    "more_info": "Подробнее"
+  },
+  "common": {
+    "loading": "Загрузка...",
+    "error": "Ошибка",
+    "success": "Успешно",
+    "cancel": "Отмена",
+    "save": "Сохранить",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "close": "Закрыть",
+    "search": "Поиск",
+    "back": "Назад"
+  },
+  "map": {
+    "title": "Карта брошенной техники",
+    "search_placeholder": "Поиск места...",
+    "total_findings": "Всего находок",
+    "filter_all": "Все",
+    "legend": "Легенда",
+    "status_confirmed": "НА МЕСТЕ",
+    "status_removed": "УВЕЗЛИ",
+    "status_pending": "ОЖИДАЕТ"
+  },
+  "auth": {
+    "login": "Войти",
+    "register": "Регистрация",
+    "logout": "Выйти",
+    "username": "Имя пользователя",
+    "email": "Email",
+    "password": "Пароль",
+    "confirm_password": "Подтвердите пароль",
+    "remember_me": "Запомнить меня",
+    "forgot_password": "Забыли пароль?",
+    "no_account": "Нет аккаунта?",
+    "have_account": "Уже есть аккаунт?",
+    "privacy_consent": "Согласен на обработку персональных данных"
+  },
+  "finding": {
+    "new_finding": "Новая находка",
+    "location": "Местоположение",
+    "category": "Категория",
+    "description": "Описание",
+    "add_photos": "Добавить фото",
+    "submit": "Отправить",
+    "confirm": "Подтвердить",
+    "report": "Пожаловаться",
+    "details": "Подробности"
+  }
+}

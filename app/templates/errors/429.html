@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}429 — Слишком часто{% endblock %}
+{% block body %}
+<div class="error-page">
+    <div class="error-code">429</div>
+    <div class="error-text">Слишком много запросов. Подождите немного.</div>
+    <a href="/" class="error-link">На главную</a>
+</div>
+{% endblock %}

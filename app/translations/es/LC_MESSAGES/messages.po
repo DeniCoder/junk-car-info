@@ -1,0 +1,223 @@
+# Spanish translations for Junk Car Info Check
+# Copyright (C) 2024 Junk Car Info
+# This file is distributed under the same license as the PROJECT.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-09-11 09:06+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: es\n"
+"Language-Team: es <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: app/templates/index.html:2
+#, fuzzy
+msgid "Брошенная техника — народная карта ржавеющих машин"
+msgstr "Vehículos Abandonados — Mapa Popular"
+
+#: app/templates/index.html:8
+#, fuzzy
+msgid "БРОШЕННАЯ ТЕХНИКА"
+msgstr "Vehículos Abandonados — Mapa Popular"
+
+#: app/templates/index.html:9
+msgid "народный архив машин у дороги"
+msgstr ""
+
+#: app/templates/index.html:12
+#, fuzzy
+msgid "найдено"
+msgstr "Objetos encontrados"
+
+#: app/templates/index.html:17
+msgid "Фильтры"
+msgstr ""
+
+#: app/templates/index.html:21
+msgid "ТИП ТЕХНИКИ"
+msgstr ""
+
+#: app/templates/index.html:24
+msgid "Все"
+msgstr ""
+
+#: app/templates/index.html:33
+#, fuzzy
+msgid "Поиск по месту..."
+msgstr "Buscar en el mapa..."
+
+#: app/templates/index.html:38
+#, fuzzy
+msgid "Добавить находку"
+msgstr "Añadir vehículo"
+
+#: app/templates/index.html:44
+msgid "НОВАЯ НАХОДКА"
+msgstr ""
+
+#: app/templates/index.html:45 app/templates/index.html:116
+msgid "Закрыть"
+msgstr ""
+
+#: app/templates/index.html:51
+msgid "Тип техники *"
+msgstr ""
+
+#: app/templates/index.html:63
+msgid "Подтип"
+msgstr ""
+
+#: app/templates/index.html:65
+msgid "Выберите"
+msgstr ""
+
+#: app/templates/index.html:70
+msgid "Описание *"
+msgstr ""
+
+#: app/templates/index.html:72
+msgid "Что видно? Состояние, цвет, номер, детали..."
+msgstr ""
+
+#: app/templates/index.html:77
+msgid "Место *"
+msgstr ""
+
+#: app/templates/index.html:79
+msgid "Город / деревня / трасса, км"
+msgstr ""
+
+#: app/templates/index.html:81
+msgid "Моё местоположение"
+msgstr ""
+
+#: app/templates/index.html:86
+msgid "Координаты (нажмите на карту)"
+msgstr ""
+
+#: app/templates/index.html:95
+#, python-format
+msgid "Фото * (до %(max_files)s)"
+msgstr ""
+
+#: app/templates/index.html:97
+msgid "Перетащите фото сюда<br>или нажмите для выбора"
+msgstr ""
+
+#: app/templates/index.html:109
+msgid "ОТМЕТИТЬ НАХОДКУ"
+msgstr ""
+
+#: app/templates/index.html:122
+msgid "Здесь пока пусто.<br>Добавьте первую находку."
+msgstr ""
+
+#: app/templates/index.html:128
+msgid "Контакты"
+msgstr "Contactos"
+
+#: app/templates/index.html:130
+msgid "Политика конфиденциальности"
+msgstr "Política de Privacidad"
+
+#: app/templates/index.html:135
+#, fuzzy
+msgid "Брошенная техника"
+msgstr "Vehículos Abandonados — Mapa Popular"
+
+#: app/templates/index.html:136
+msgid "Этот сайт работает лучше с включённым JavaScript."
+msgstr ""
+
+#: app/templates/index.html:137
+#, python-format
+msgid "Найдено %(count)s находок."
+msgstr ""
+
+#~ msgid ""
+#~ "Интерактивная карта брошенной техники. Отмечай"
+#~ " и находи заброшенные автомобили, тракторы,"
+#~ " прицепы у дорог."
+#~ msgstr ""
+#~ "Mapa interactivo de vehículos abandonados. "
+#~ "Marca y encuentra automóviles, tractores, "
+#~ "remolques abandonados cerca de las "
+#~ "carreteras."
+
+#~ msgid "Карта"
+#~ msgstr "Mapa"
+
+#~ msgid "Админ-панель"
+#~ msgstr "Panel de Administración"
+
+#~ msgid "Выйти"
+#~ msgstr "Cerrar sesión"
+
+#~ msgid "Войти"
+#~ msgstr "Iniciar sesión"
+
+#~ msgid "Регистрация"
+#~ msgstr "Registro"
+
+#~ msgid "Условия использования"
+#~ msgstr "Términos de Uso"
+
+#~ msgid "© 2024 Брошенная Техника. Все права защищены."
+#~ msgstr "© 2024 Vehículos Abandonados. Todos los derechos reservados."
+
+#~ msgid ""
+#~ "Мы используем файлы cookie для улучшения"
+#~ " работы сайта. Продолжая использовать сайт,"
+#~ " вы соглашаетесь с нашей"
+#~ msgstr ""
+#~ "Usamos cookies para mejorar el "
+#~ "rendimiento del sitio. Al continuar "
+#~ "usando el sitio, usted acepta nuestra"
+
+#~ msgid "политикой cookie"
+#~ msgstr "política de cookies"
+
+#~ msgid "Принять все"
+#~ msgstr "Aceptar todo"
+
+#~ msgid "Отклонить"
+#~ msgstr "Rechazar"
+
+#~ msgid "Пожалуйста, войдите для доступа к этой странице."
+#~ msgstr "Por favor, inicie sesión para acceder a esta página."
+
+#~ msgid "Добро пожаловать"
+#~ msgstr "Bienvenido"
+
+#~ msgid "Неверное имя пользователя или пароль."
+#~ msgstr "Nombre de usuario o contraseña inválidos."
+
+#~ msgid "Все поля обязательны для заполнения."
+#~ msgstr "Todos los campos son obligatorios."
+
+#~ msgid "Пароли не совпадают."
+#~ msgstr "Las contraseñas no coinciden."
+
+#~ msgid "Пароль должен быть не менее 6 символов."
+#~ msgstr "La contraseña debe tener al menos 6 caracteres."
+
+#~ msgid "Имя пользователя уже занято."
+#~ msgstr "El nombre de usuario ya está ocupado."
+
+#~ msgid "Email уже зарегистрирован."
+#~ msgstr "El correo electrónico ya está registrado."
+
+#~ msgid "Регистрация успешна! Теперь вы можете войти."
+#~ msgstr "¡Registro exitoso! Ahora puede iniciar sesión."
+
+#~ msgid "Вы вышли из системы."
+#~ msgstr "Ha cerrado sesión."
+

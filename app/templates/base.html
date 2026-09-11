@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="{{ session.get('language', 'ru') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Брошенная техника — народная карта{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}Интерактивная карта брошенной техники. Отмечай и находи заброшенные автомобили, тракторы, прицепы у дорог.{% endblock %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Condensed:wght@500;700;900&family=JetBrains+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="header-left">
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+            <a href="{{ url_for('web.index') }}" class="logo">🚗 Брошенная Техника</a>
+            <nav class="main-nav" id="mainNav">
+                <a href="{{ url_for('web.index') }}" class="nav-link{% if request.endpoint == 'web.index' %} active{% endif %}">Карта</a>
+                <a href="{{ url_for('web.contacts') }}" class="nav-link{% if request.endpoint == 'web.contacts' %} active{% endif %}">Контакты</a>
+                {% if current_user.is_admin %}
+                    <a href="{{ url_for('admin.dashboard') }}" class="nav-link">Админ-панель</a>
+                {% endif %}
+            </nav>
+        </div>
+        
+        <div class="header-right">
+            <!-- Language Switcher -->
+            <div class="language-switcher">
+                <div class="lang-current">
+                    <span>{{ session.get('language', 'ru')|upper }}</span>
+                    <span>▼</span>
+                </div>
+                <div class="lang-dropdown">
+                    <a href="{{ url_for('web.set_language', lang_code='ru') }}" class="lang-option{% if session.get('language', 'ru') == 'ru' %} active{% endif %}">RU Русский</a>
+                    <a href="{{ url_for('web.set_language', lang_code='en') }}" class="lang-option{% if session.get('language') == 'en' %} active{% endif %}">EN English</a>
+                    <a href="{{ url_for('web.set_language', lang_code='zh') }}" class="lang-option{% if session.get('language') == 'zh' %} active{% endif %}">ZH 中文</a>
+                    <a href="{{ url_for('web.set_language', lang_code='es') }}" class="lang-option{% if session.get('language') == 'es' %} active{% endif %}">ES Español</a>
+                </div>
+            </div>
+            
+            <!-- User Menu -->
+            {% if current_user.is_authenticated %}
+                <div class="user-menu">
+                    <span class="user-name">{{ current_user.username }}</span>
+                    <a href="{{ url_for('auth.logout') }}" class="btn-logout">Выйти</a>
+                </div>
+            {% else %}
+                <div class="user-menu">
+                    <a href="{{ url_for('auth.login') }}" class="nav-link">Войти</a>
+                    <a href="{{ url_for('auth.register') }}" class="nav-link" style="background: var(--accent-rust); color: var(--text-primary);">Регистрация</a>
+                </div>
+            {% endif %}
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main style="margin-top: 60px; margin-bottom: 40px; height: calc(100vh - 100px);">
+        {% block body %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-links">
+            <a href="{{ url_for('web.privacy') }}" class="footer-link">Политика конфиденциальности</a>
+            <a href="{{ url_for('web.terms') }}" class="footer-link">Условия использования</a>
+            <a href="{{ url_for('web.contacts') }}" class="footer-link">Контакты</a>
+        </div>
+        <div>© 2024 Брошенная Техника. Все права защищены.</div>
+    </footer>
+    
+    <!-- Cookie Banner -->
+    <div class="cookie-banner" id="cookieBanner">
+        <div class="cookie-banner-text">
+            Мы используем файлы cookie для улучшения работы сайта. Продолжая использовать сайт, вы соглашаетесь с нашей 
+            <a href="{{ url_for('web.cookie_policy') }}" style="color: var(--accent-yellow);">политикой cookie</a>.
+        </div>
+        <div class="cookie-banner-buttons">
+            <button class="btn-cookie-accept" onclick="acceptCookies()">Принять все</button>
+            <button class="btn-cookie-decline" onclick="declineCookies()">Отклонить</button>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script>
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            document.getElementById('mainNav').classList.toggle('active');
+        }
+        
+        // Cookie banner
+        function showCookieBanner() {
+            if (!localStorage.getItem('cookiesAccepted')) {
+                document.getElementById('cookieBanner').classList.add('show');
+            }
+        }
+        
+        function acceptCookies() {
+            localStorage.setItem('cookiesAccepted', 'true');
+            document.getElementById('cookieBanner').classList.remove('show');
+        }
+        
+        function declineCookies() {
+            localStorage.setItem('cookiesAccepted', 'false');
+            document.getElementById('cookieBanner').classList.remove('show');
+        }
+        
+        // Show cookie banner on page load
+        document.addEventListener('DOMContentLoaded', showCookieBanner);
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

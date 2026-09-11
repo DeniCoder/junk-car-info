@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход — Админ</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body class="admin-body">
+    <div class="login-container">
+        <h1 class="login-title">МОДЕРАЦИЯ</h1>
+        {% if error %}
+        <p class="login-error">{{ error }}</p>
+        {% endif %}
+        <form method="POST" class="login-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+            <input type="password" name="token" class="login-input" placeholder="Токен доступа" autofocus required>
+            <button type="submit" class="login-btn">ВОЙТИ</button>
+        </form>
+    </div>
+</body>
+</html>

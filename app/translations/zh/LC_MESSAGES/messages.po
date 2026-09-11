@@ -1,0 +1,216 @@
+# Chinese translations for Junk Car Info Check
+# Copyright (C) 2024 Junk Car Info
+# This file is distributed under the same license as the PROJECT.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2026-09-11 09:06+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh\n"
+"Language-Team: zh <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.18.0\n"
+
+#: app/templates/index.html:2
+#, fuzzy
+msgid "Брошенная техника — народная карта ржавеющих машин"
+msgstr "废弃车辆 - 民间地图"
+
+#: app/templates/index.html:8
+#, fuzzy
+msgid "БРОШЕННАЯ ТЕХНИКА"
+msgstr "废弃车辆 - 民间地图"
+
+#: app/templates/index.html:9
+msgid "народный архив машин у дороги"
+msgstr ""
+
+#: app/templates/index.html:12
+#, fuzzy
+msgid "найдено"
+msgstr "找到的对象"
+
+#: app/templates/index.html:17
+msgid "Фильтры"
+msgstr ""
+
+#: app/templates/index.html:21
+msgid "ТИП ТЕХНИКИ"
+msgstr ""
+
+#: app/templates/index.html:24
+msgid "Все"
+msgstr ""
+
+#: app/templates/index.html:33
+#, fuzzy
+msgid "Поиск по месту..."
+msgstr "在地图上搜索..."
+
+#: app/templates/index.html:38
+#, fuzzy
+msgid "Добавить находку"
+msgstr "添加车辆"
+
+#: app/templates/index.html:44
+msgid "НОВАЯ НАХОДКА"
+msgstr ""
+
+#: app/templates/index.html:45 app/templates/index.html:116
+msgid "Закрыть"
+msgstr ""
+
+#: app/templates/index.html:51
+msgid "Тип техники *"
+msgstr ""
+
+#: app/templates/index.html:63
+msgid "Подтип"
+msgstr ""
+
+#: app/templates/index.html:65
+msgid "Выберите"
+msgstr ""
+
+#: app/templates/index.html:70
+msgid "Описание *"
+msgstr ""
+
+#: app/templates/index.html:72
+msgid "Что видно? Состояние, цвет, номер, детали..."
+msgstr ""
+
+#: app/templates/index.html:77
+msgid "Место *"
+msgstr ""
+
+#: app/templates/index.html:79
+msgid "Город / деревня / трасса, км"
+msgstr ""
+
+#: app/templates/index.html:81
+msgid "Моё местоположение"
+msgstr ""
+
+#: app/templates/index.html:86
+msgid "Координаты (нажмите на карту)"
+msgstr ""
+
+#: app/templates/index.html:95
+#, python-format
+msgid "Фото * (до %(max_files)s)"
+msgstr ""
+
+#: app/templates/index.html:97
+msgid "Перетащите фото сюда<br>или нажмите для выбора"
+msgstr ""
+
+#: app/templates/index.html:109
+msgid "ОТМЕТИТЬ НАХОДКУ"
+msgstr ""
+
+#: app/templates/index.html:122
+msgid "Здесь пока пусто.<br>Добавьте первую находку."
+msgstr ""
+
+#: app/templates/index.html:128
+msgid "Контакты"
+msgstr "联系方式"
+
+#: app/templates/index.html:130
+msgid "Политика конфиденциальности"
+msgstr "隐私政策"
+
+#: app/templates/index.html:135
+#, fuzzy
+msgid "Брошенная техника"
+msgstr "废弃车辆 - 民间地图"
+
+#: app/templates/index.html:136
+msgid "Этот сайт работает лучше с включённым JavaScript."
+msgstr ""
+
+#: app/templates/index.html:137
+#, python-format
+msgid "Найдено %(count)s находок."
+msgstr ""
+
+#~ msgid ""
+#~ "Интерактивная карта брошенной техники. Отмечай"
+#~ " и находи заброшенные автомобили, тракторы,"
+#~ " прицепы у дорог."
+#~ msgstr "废弃车辆互动地图。标记并查找路边废弃的汽车、拖拉机、拖车。"
+
+#~ msgid "Карта"
+#~ msgstr "地图"
+
+#~ msgid "Админ-панель"
+#~ msgstr "管理面板"
+
+#~ msgid "Выйти"
+#~ msgstr "退出"
+
+#~ msgid "Войти"
+#~ msgstr "登录"
+
+#~ msgid "Регистрация"
+#~ msgstr "注册"
+
+#~ msgid "Условия использования"
+#~ msgstr "使用条款"
+
+#~ msgid "© 2024 Брошенная Техника. Все права защищены."
+#~ msgstr "© 2024 废弃车辆。保留所有权利。"
+
+#~ msgid ""
+#~ "Мы используем файлы cookie для улучшения"
+#~ " работы сайта. Продолжая использовать сайт,"
+#~ " вы соглашаетесь с нашей"
+#~ msgstr "我们使用 Cookie 来改善网站性能。继续使用本网站即表示您同意我们的"
+
+#~ msgid "политикой cookie"
+#~ msgstr "Cookie 政策"
+
+#~ msgid "Принять все"
+#~ msgstr "全部接受"
+
+#~ msgid "Отклонить"
+#~ msgstr "拒绝"
+
+#~ msgid "Пожалуйста, войдите для доступа к этой странице."
+#~ msgstr "请登录以访问此页面。"
+
+#~ msgid "Добро пожаловать"
+#~ msgstr "欢迎"
+
+#~ msgid "Неверное имя пользователя или пароль."
+#~ msgstr "用户名或密码无效。"
+
+#~ msgid "Все поля обязательны для заполнения."
+#~ msgstr "所有字段均为必填项。"
+
+#~ msgid "Пароли не совпадают."
+#~ msgstr "密码不匹配。"
+
+#~ msgid "Пароль должен быть не менее 6 символов."
+#~ msgstr "密码必须至少为 6 个字符。"
+
+#~ msgid "Имя пользователя уже занято."
+#~ msgstr "用户名已被占用。"
+
+#~ msgid "Email уже зарегистрирован."
+#~ msgstr "电子邮件已注册。"
+
+#~ msgid "Регистрация успешна! Теперь вы можете войти."
+#~ msgstr "注册成功！您现在可以登录了。"
+
+#~ msgid "Вы вышли из системы."
+#~ msgstr "您已退出登录。"
+

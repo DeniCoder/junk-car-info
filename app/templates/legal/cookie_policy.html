@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Политика использования Cookie — Брошенная техника{% endblock %}
+
+{% block body %}
+<div class="legal-container">
+    <div class="legal-content">
+        <h1>Политика использования файлов Cookie</h1>
+        <p class="last-updated">Последнее обновление: 10 Сентября 2026</p>
+
+        <section>
+            <h2>1. Что такое файлы cookie</h2>
+            <p>Файлы cookie — это небольшие текстовые файлы, которые сохраняются на вашем устройстве (компьютере, смартфоне или планшете) при посещении веб-сайтов. Они широко используются для обеспечения работы сайтов, а также для предоставления информации владельцам сайтов.</p>
+        </section>
+
+        <section>
+            <h2>2. Какие cookie мы используем</h2>
+            
+            <h3>2.1 Необходимые файлы cookie</h3>
+            <p>Эти файлы cookie необходимы для работы нашего сайта и не могут быть отключены. Они включают:</p>
+            <ul>
+                <li><strong>session_id</strong> — идентификатор сессии пользователя</li>
+                <li><strong>csrf_token</strong> — токен защиты от межсайтовой подделки запросов</li>
+                <li><strong>language_preference</strong> — выбранный язык интерфейса</li>
+                <li><strong>authenticated</strong> — статус аутентификации пользователя</li>
+            </ul>
+            <p>Эти файлы cookie не собирают личную информацию и не могут быть отключены.</p>
+
+            <h3>2.2 Аналитические файлы cookie</h3>
+            <p>Мы можем использовать аналитические cookie для понимания того, как пользователи взаимодействуют с нашим сайтом. Эти файлы помогают нам улучшать работу сайта:</p>
+            <ul>
+                <li><strong>_ga</strong>, <strong>_gid</strong> — Google Analytics (если подключен)</li>
+                <li><strong>_ym_uid</strong>, <strong>_ym_d</strong> — Яндекс.Метрика (если подключен)</li>
+            </ul>
+            <p>Вы можете отказаться от использования аналитических cookie через настройки вашего браузера или через наш баннер cookie.</p>
+
+            <h3>2.3 Функциональные файлы cookie</h3>
+            <p>Эти файлы cookie позволяют сайту запоминать ваши предпочтения:</p>
+            <ul>
+                <li>Выбранный язык</li>
+                <li>Регион/местоположение</li>
+                <li>Настройки отображения карты</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>3. Как управлять файлами cookie</h2>
+            
+            <h3>3.1 Через наш сайт</h3>
+            <p>При первом посещении сайта вам будет показан баннер с предложением принять или отклонить использование cookie. Вы можете:</p>
+            <ul>
+                <li>Принять все cookie</li>
+                <li>Отклонить необязательные cookie</li>
+                <li>Настроить выборочно</li>
+            </ul>
+            <p>Ваш выбор сохраняется в localStorage вашего браузера на 1 год.</p>
+
+            <h3>3.2 Через настройки браузера</h3>
+            <p>Большинство браузеров позволяют управлять cookie через свои настройки. Вы можете:</p>
+            <ul>
+                <li>Просматривать установленные cookie</li>
+                <li>Удалять отдельные cookie или все сразу</li>
+                <li>Блокировать cookie от определенных сайтов</li>
+                <li>Блокировать все cookie</li>
+            </ul>
+            <p>Инструкции для популярных браузеров:</p>
+            <ul>
+                <li><a href="https://support.google.com/chrome/answer/95647" target="_blank">Google Chrome</a></li>
+                <li><a href="https://support.mozilla.org/ru/kb/cookies-information-хранящаяся-на-сайтах" target="_blank">Mozilla Firefox</a></li>
+                <li><a href="https://support.apple.com/ru-ru/guide/safari/sfri11471/mac" target="_blank">Safari</a></li>
+                <li><a href="https://support.microsoft.com/ru-ru/microsoft-edge/удалить-файлы-cookie-в-microsoft-edge-63947406-40ac-c3b8-57b9-2a946a29ae09" target="_blank">Microsoft Edge</a></li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>4. Сторонние файлы cookie</h2>
+            <p>Наш сайт может использовать сервисы третьих сторон, которые устанавливают свои cookie:</p>
+            <ul>
+                <li><strong>OpenStreetMap</strong> — для отображения карт</li>
+                <li><strong>Google Fonts</strong> — для загрузки шрифтов</li>
+                <li><strong>Хостинг изображений</strong> — для хранения фотографий техники</li>
+            </ul>
+            <p>Мы рекомендуем ознакомиться с политиками конфиденциальности этих сервисов.</p>
+        </section>
+
+        <section>
+            <h2>5. Обновление политики cookie</h2>
+            <p>Мы можем периодически обновлять эту политику. Актуальная версия всегда доступна на этой странице. При существенных изменениях мы уведомим вас через баннер на сайте.</p>
+        </section>
+
+        <section>
+            <h2>6. Контакты</h2>
+            <p>Если у вас возникли вопросы по поводу использования cookie, вы можете связаться с нами:</p>
+            <ul>
+                <li>Email: <a href="mailto:support@junkcar.example">support@junkcar.example</a></li>
+                <li>Через страницу <a href="{{ url_for('web.contacts') }}">Контакты</a></li>
+            </ul>
+        </section>
+
+        <div class="legal-footer">
+            <p>Для соответствия требованиям GDPR (ЕС), 152-ФЗ (РФ) и других применимых законодательств о защите данных.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.legal-container {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.legal-content {
+    background: var(--bg-primary, #fff);
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.legal-content h1 {
+    color: var(--text-primary, #1a1a1a);
+    margin-bottom: 10px;
+}
+
+.last-updated {
+    color: var(--text-secondary, #666);
+    font-size: 14px;
+    margin-bottom: 30px;
+}
+
+.legal-content h2 {
+    color: var(--accent-rust, #c24d00);
+    margin-top: 30px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--accent-rust, #c24d00);
+}
+
+.legal-content h3 {
+    color: var(--text-primary, #1a1a1a);
+    margin-top: 25px;
+    margin-bottom: 10px;
+}
+
+.legal-content p {
+    line-height: 1.6;
+    color: var(--text-secondary, #333);
+    margin-bottom: 15px;
+}
+
+.legal-content ul {
+    margin-bottom: 15px;
+    padding-left: 25px;
+}
+
+.legal-content li {
+    line-height: 1.6;
+    color: var(--text-secondary, #333);
+    margin-bottom: 8px;
+}
+
+.legal-content a {
+    color: var(--accent-rust, #c24d00);
+    text-decoration: none;
+}
+
+.legal-content a:hover {
+    text-decoration: underline;
+}
+
+.legal-footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 13px;
+    color: var(--text-secondary, #666);
+}
+
+@media (max-width: 768px) {
+    .legal-content {
+        padding: 25px;
+    }
+    
+    .legal-content h1 {
+        font-size: 24px;
+    }
+    
+    .legal-content h2 {
+        font-size: 20px;
+    }
+}
+</style>
+{% endblock %}

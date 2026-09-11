@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports — Брошенная техника</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo+Condensed:wght@500;700;900&family=JetBrains+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <style>
+        .finding-thumb { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: var(--bg-primary); padding: 24px; border-radius: 8px; max-width: 90vw; max-height: 90vh; overflow: auto; position: relative; }
+        .modal-close { position: absolute; top: 12px; right: 16px; font-size: 28px; cursor: pointer; color: var(--text-secondary); }
+        .status-actions { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 8px; }
+        .status-btn { padding: 4px 8px; font-size: 11px; border: none; border-radius: 3px; cursor: pointer; }
+        .status-btn-published { background: #4caf50; color: white; }
+        .status-btn-hidden { background: #ff9800; color: white; }
+        .status-btn-rejected { background: #f44336; color: white; }
+        .status-btn-pending { background: #9e9e9e; color: white; }
+        .per-page-select { padding: 4px 8px; margin-left: 8px; }
+        .loading-indicator { text-align: center; padding: 24px; color: var(--text-secondary); display: none; }
+    </style>
+</head>
+<body class="admin-body">
+    <div class="admin-header">
+        <h1 class="admin-title">ОТЧЁТЫ</h1>
+        <a href="{{ url_for('admin.dashboard') }}" class="admin-nav">Дашборд</a>
+        <a href="{{ url_for('admin.reports') }}" class="admin-nav" style="border-color:var(--accent-yellow);color:var(--accent-yellow)">Отчёты</a>
+        <a href="{{ url_for('admin.stats') }}" class="admin-nav">Статистика</a>
+        <a href="{{ url_for('admin.edit_content', slug='privacy') }}" class="admin-nav">Приватность</a>
+        <a href="{{ url_for('admin.edit_content', slug='contacts') }}" class="admin-nav">Контакты</a>
+        <a href="{{ url_for('admin.logout') }}" class="admin-nav admin-logout">Выйти</a>
+    </div>
+    
+    <!-- Photo Preview Modal -->
+    <div id="photoModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closePhotoModal()">&times;</span>
+            <img id="modalImage" src="" alt="Preview" style="max-width: 100%; max-height: 80vh;">
+        </div>
+    </div>
+
+    <form method="GET" action="{{ url_for('admin.reports') }}" class="admin-filters" id="filterForm">
+        <div class="admin-filter-group">
+            <label>Тип</label>
+            <select name="category_id" id="filter_category">
+                <option value="">Все</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" {{ 'selected' if f_category_id == cat.id }}>{{ cat.title }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="admin-filter-group">
+            <label>Статус</label>
+            <select name="status" id="filter_status">
+                <option value="">Все</option>
+                <option value="published" {{ 'selected' if f_status == 'published' }}>Published</option>
+                <option value="hidden" {{ 'selected' if f_status == 'hidden' }}>Hidden</option>
+                <option value="rejected" {{ 'selected' if f_status == 'rejected' }}>Rejected</option>
+                <option value="pending" {{ 'selected' if f_status == 'pending' }}>Pending</option>
+            </select>
+        </div>
+        <div class="admin-filter-group">
+            <label>С даты</label>
+            <input type="date" name="date_from" id="filter_date_from" value="{{ f_date_from }}">
+        </div>
+        <div class="admin-filter-group">
+            <label>По дату</label>
+            <input type="date" name="date_to" id="filter_date_to" value="{{ f_date_to }}">
+        </div>
+        <div class="admin-filter-group">
+            <label>Место</label>
+            <input type="text" name="search" id="filter_search" value="{{ f_search }}" placeholder="Поиск...">
+        </div>
+        <div class="admin-filter-group">
+            <label>На страницу</label>
+            <select name="per_page" id="per_page" class="per-page-select" onchange="loadPage(1)">
+                <option value="20" {{ 'selected' if current_per_page == 20 }}>20</option>
+                <option value="50" {{ 'selected' if current_per_page == 50 }}>50</option>
+                <option value="100" {{ 'selected' if current_per_page == 100 }}>100</option>
+            </select>
+        </div>
+        <button type="submit" class="admin-filter-btn">ПОИСК</button>
+        <a href="{{ url_for('admin.reports_pdf', category_id=f_category_id, status=f_status, date_from=f_date_from, date_to=f_date_to, search=f_search) }}"
+           class="admin-filter-btn pdf-btn" target="_blank">PDF</a>
+    </form>
+
+    <div class="admin-stats" style="border-bottom:1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+        <span class="admin-stat">Найдено: <span id="total_count">{{ filtered_total }}</span></span>
+        <span class="admin-stat" id="pagination_info">Страница {{ pagination.page }} из {{ pagination.pages }}</span>
+    </div>
+
+    <div id="loading" class="loading-indicator">Загрузка...</div>
+
+    <div style="overflow-x:auto">
+        <table class="admin-table" id="findings_table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Фото</th>
+                    <th>Тип</th>
+                    <th>Место</th>
+                    <th>Статус</th>
+                    <th>Дата</th>
+                    <th>Жалоб</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody id="findings_body">
+                {% for f in findings %}
+                <tr data-finding-id="{{ f.id }}">
+                    <td class="mono-id">{{ f.id[:8] }}</td>
+                    <td>
+                        {% if f.photos.first() and f.photos.first().thumb_url %}
+                        <img src="{{ f.photos.first().thumb_url }}" alt="thumb" class="finding-thumb" onclick="openPhotoModal('{{ f.photos.first().image_url }}')">
+                        {% else %}
+                        <span style="color:var(--text-secondary)">Нет фото</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ f.category.title if f.category else '—' }}</td>
+                    <td>{{ f.location_name or '—' }}</td>
+                    <td>
+                        <span class="status-badge status-{{ f.status }}">{{ f.status|upper }}</span>
+                        <div class="status-actions">
+                            <button class="status-btn status-btn-published" onclick="changeStatus('{{ f.id }}', 'published')">ОПУБЛ</button>
+                            <button class="status-btn status-btn-hidden" onclick="changeStatus('{{ f.id }}', 'hidden')">СКРЫТЬ</button>
+                            <button class="status-btn status-btn-rejected" onclick="changeStatus('{{ f.id }}', 'rejected')">ОТКЛОН</button>
+                            <button class="status-btn status-btn-pending" onclick="changeStatus('{{ f.id }}', 'pending')">В ОЖИД</button>
+                        </div>
+                    </td>
+                    <td class="mono">{{ f.created_at.strftime('%d.%m.%Y %H:%M') if f.created_at else '—' }}</td>
+                    <td>{{ f.reports_count or 0 }}</td>
+                    <td>
+                        <a href="/finding/{{ f.id }}" class="admin-view-btn" target="_blank">ПРОСМОТР</a>
+                        <button onclick="deleteFinding('{{ f.id }}')" class="admin-delete-btn" style="margin-top:4px;">УДАЛИТЬ</button>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not findings %}
+                <tr><td colspan="8" style="text-align:center;color:var(--text-secondary);padding:24px">Ничего не найдено</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+    <div class="admin-pagination" id="pagination">
+        {% for p in pagination.iter_pages() %}
+        {% if p %}
+        <a href="#" onclick="loadPage({{ p }}); return false;"
+           class="admin-page {{ 'active' if p == pagination.page }}">{{ p }}</a>
+        {% else %}
+        <span class="admin-page-dots">...</span>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <script>
+        let currentPage = {{ pagination.page }};
+        const csrfToken = "{{ csrf_token() }}";
+
+        function loadPage(page) {
+            currentPage = page;
+            document.getElementById('loading').style.display = 'block';
+            
+            const params = new URLSearchParams({
+                category_id: document.getElementById('filter_category').value,
+                status: document.getElementById('filter_status').value,
+                date_from: document.getElementById('filter_date_from').value,
+                date_to: document.getElementById('filter_date_to').value,
+                search: document.getElementById('filter_search').value,
+                per_page: document.getElementById('per_page').value,
+                page: page
+            });
+
+            fetch('{{ url_for("admin.reports") }}?' + params.toString(), {
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            })
+            .then(r => r.json())
+            .then(data => {
+                updateTable(data);
+                document.getElementById('loading').style.display = 'none';
+            });
+        }
+
+        function updateTable(data) {
+            const tbody = document.getElementById('findings_body');
+            tbody.innerHTML = '';
+            
+            if (data.findings.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-secondary);padding:24px">Ничего не найдено</td></tr>';
+            } else {
+                data.findings.forEach(f => {
+                    const row = document.createElement('tr');
+                    row.setAttribute('data-finding-id', f.id);
+                    const thumbHtml = f.thumb_url 
+                        ? `<img src="${f.thumb_url}" alt="thumb" class="finding-thumb" onclick="openPhotoModal('${f.thumb_url}')">`
+                        : '<span style="color:var(--text-secondary)">Нет фото</span>';
+                    
+                    row.innerHTML = `
+                        <td class="mono-id">${f.short_id}</td>
+                        <td>${thumbHtml}</td>
+                        <td>${f.category}</td>
+                        <td>${f.location_name}</td>
+                        <td>
+                            <span class="status-badge status-${f.status}">${f.status.toUpperCase()}</span>
+                            <div class="status-actions">
+                                <button class="status-btn status-btn-published" onclick="changeStatus('${f.id}', 'published')">ОПУБЛ</button>
+                                <button class="status-btn status-btn-hidden" onclick="changeStatus('${f.id}', 'hidden')">СКРЫТЬ</button>
+                                <button class="status-btn status-btn-rejected" onclick="changeStatus('${f.id}', 'rejected')">ОТКЛОН</button>
+                                <button class="status-btn status-btn-pending" onclick="changeStatus('${f.id}', 'pending')">В ОЖИД</button>
+                            </div>
+                        </td>
+                        <td class="mono">${f.created_at}</td>
+                        <td>${f.reports_count}</td>
+                        <td>
+                            <a href="${f.detail_url}" class="admin-view-btn" target="_blank">ПРОСМОТР</a>
+                            <button onclick="deleteFinding('${f.id}')" class="admin-delete-btn" style="margin-top:4px;">УДАЛИТЬ</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+            
+            document.getElementById('total_count').textContent = data.total;
+            document.getElementById('pagination_info').textContent = `Страница ${data.page} из ${data.pages}`;
+            updatePagination(data);
+        }
+
+        function updatePagination(data) {
+            const pagDiv = document.getElementById('pagination');
+            if (!pagDiv || data.pages <= 1) {
+                if (pagDiv) pagDiv.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            for (let p = 1; p <= data.pages; p++) {
+                if (p === data.page) {
+                    html += `<a href="#" onclick="loadPage(${p}); return false;" class="admin-page active">${p}</a>`;
+                } else {
+                    html += `<a href="#" onclick="loadPage(${p}); return false;" class="admin-page">${p}</a>`;
+                }
+            }
+            pagDiv.innerHTML = html;
+        }
+
+        function changeStatus(findingId, newStatus) {
+            if (!confirm(`Изменить статус на ${newStatus}?`)) return;
+            
+            fetch(`/admin/finding/${findingId}/toggle_status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({status: newStatus})
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    loadPage(currentPage);
+                } else {
+                    alert('Ошибка: ' + data.error);
+                }
+            });
+        }
+
+        function deleteFinding(findingId) {
+            if (!confirm('Удалить находку? Это действие необратимо.')) return;
+            
+            fetch(`/admin/finding/${findingId}/delete`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-Token': csrfToken
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.status === 'deleted') {
+                    loadPage(currentPage);
+                } else {
+                    alert('Ошибка при удалении');
+                }
+            });
+        }
+
+        function openPhotoModal(imageUrl) {
+            document.getElementById('modalImage').src = imageUrl;
+            document.getElementById('photoModal').classList.add('active');
+        }
+
+        function closePhotoModal() {
+            document.getElementById('photoModal').classList.remove('active');
+        }
+
+        // Close modal on outside click
+        document.getElementById('photoModal').addEventListener('click', function(e) {
+            if (e.target === this) closePhotoModal();
+        });
+    </script>
+</body>
+</html>

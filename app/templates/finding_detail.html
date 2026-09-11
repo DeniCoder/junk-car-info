@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{% block title %}Находка {{ finding.id[:8] }} — Брошенная техника{% endblock %}
+{% block meta_description %}{{ finding.description[:160] if finding.description else 'Находка на карте брошенной техники' }}{% endblock %}
+
+{% block body %}
+<div class="detail-page">
+    <a href="/" class="back-link">&larr; На карту</a>
+
+    <div class="detail-card">
+        <div class="detail-gallery" id="gallery">
+            {% set photos = finding.photos.all() %}
+            {% for photo in photos %}
+            <div class="gallery-item" data-index="{{ loop.index0 }}" data-url="{{ photo.web_url }}">
+                <img src="{{ photo.thumb_url }}" alt="Фото находки" loading="lazy" class="gallery-img">
+            </div>
+            {% endfor %}
+            {% if photos|length == 0 %}
+            <div class="gallery-item gallery-empty">
+                <span>Нет фото</span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if photos|length > 1 %}
+        <div class="gallery-nav">
+            <button class="gallery-prev" id="galleryPrev">&larr;</button>
+            <span class="gallery-counter" id="galleryCounter">1 / {{ photos|length }}</span>
+            <button class="gallery-next" id="galleryNext">&rarr;</button>
+        </div>
+        {% endif %}
+
+        <div class="detail-meta">
+            <div class="meta-row">
+                <span class="meta-label">ТИП</span>
+                <span class="meta-value">{{ finding.category.title if finding.category else '—' }}{% if finding.sub_type %} / {{ finding.sub_type }}{% endif %}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">СТАТУС</span>
+                <span class="meta-value status-{{ finding.status }}">
+                    {% if finding.status == 'published' %}НА МЕСТЕ
+                    {% elif finding.status == 'hidden' %}УВЕЗЛИ
+                    {% elif finding.status == 'pending' %}ОЖИДАНИЕ
+                    {% else %}{{ finding.status|upper }}{% endif %}
+                </span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">КООРДИНАТЫ</span>
+                <span class="meta-value mono">{{ "%.6f"|format(finding.lat|float) }}, {{ "%.6f"|format(finding.lon|float) }}</span>
+            </div>
+            {% if finding.location_name %}
+            <div class="meta-row">
+                <span class="meta-label">МЕСТО</span>
+                <span class="meta-value">{{ finding.location_name }}</span>
+            </div>
+            {% endif %}
+            <div class="meta-row">
+                <span class="meta-label">НАЙДЕНО</span>
+                <span class="meta-value mono">{{ finding.created_at.strftime('%d.%m.%Y') if finding.created_at else '—' }}</span>
+            </div>
+            <div class="meta-row">
+                <span class="meta-label">ID</span>
+                <span class="meta-value mono">{{ finding.id[:8] }}</span>
+            </div>
+        </div>
+
+        {% if finding.description %}
+        <div class="detail-description">
+            <div class="desc-label">ОПИСАНИЕ</div>
+            <p class="desc-text">{{ finding.description }}</p>
+        </div>
+        {% endif %}
+
+        <div class="detail-actions">
+            <a href="https://www.google.com/maps/dir/?api=1&destination={{ finding.lat }},{{ finding.lon }}"
+               target="_blank" rel="noopener" class="action-btn">
+                МАРШРУТ
+            </a>
+            <button class="action-btn action-report" id="reportBtn" data-id="{{ finding.id }}">
+                ПОЖАЛОВАТЬСЯ
+            </button>
+        </div>
+
+        <div class="vote-section">
+            <div class="vote-label">ПОДТВЕРДИТЬ СТАТУС</div>
+            <div class="vote-buttons">
+                <button class="vote-btn vote-confirmed" id="voteConfirmed" data-type="confirmed">
+                    НА МЕСТЕ ✓
+                </button>
+                <button class="vote-btn vote-removed" id="voteRemoved" data-type="removed">
+                    УВЕЗЛИ ✗
+                </button>
+            </div>
+            <div class="unconfirmed-notice" id="unconfirmedNotice"{% if finding.confirmed_count_others >= 3 %} style="display:none"{% endif %}>
+                Информация не подтверждена — необходимо 3 независимых подтверждения от разных пользователей
+            </div>
+            <div class="vote-counts">
+                <span class="vote-count confirmed">Подтверждений: <span id="voteConfirmedOthers">{{ finding.confirmed_count_others }}</span>/3</span>
+                <span class="vote-count removed">Снято: <span id="voteRemovedCount">{{ finding.removed_count }}</span></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gallery slideshow
+    var gallery = document.getElementById('gallery');
+    var items = gallery ? gallery.querySelectorAll('.gallery-item') : [];
+    var counter = document.getElementById('galleryCounter');
+    var current = 0;
+
+    function showSlide(n) {
+        items.forEach(function(item, i) {
+            item.style.display = i === n ? 'block' : 'none';
+        });
+        current = n;
+        if (counter) counter.textContent = (n + 1) + ' / ' + items.length;
+    }
+
+    if (items.length > 1) {
+        showSlide(0);
+        var prev = document.getElementById('galleryPrev');
+        var next = document.getElementById('galleryNext');
+        if (prev) prev.addEventListener('click', function() {
+            showSlide((current - 1 + items.length) % items.length);
+        });
+        if (next) next.addEventListener('click', function() {
+            showSlide((current + 1) % items.length);
+        });
+    }
+
+    // Lightbox
+    function openLightbox(startIndex) {
+        var urls = [];
+        items.forEach(function(item) {
+            var url = item.getAttribute('data-url');
+            if (url) urls.push(url);
+        });
+        if (urls.length === 0) return;
+
+        var idx = startIndex || 0;
+        var overlay = document.createElement('div');
+        overlay.className = 'lightbox-overlay';
+
+        var img = document.createElement('img');
+        img.className = 'lightbox-img';
+        img.src = urls[idx];
+        overlay.appendChild(img);
+
+        var closeBtn = document.createElement('button');
+        closeBtn.className = 'lightbox-close';
+        closeBtn.textContent = '×';
+        overlay.appendChild(closeBtn);
+
+        if (urls.length > 1) {
+            var prevBtn = document.createElement('button');
+            prevBtn.className = 'lightbox-nav lightbox-prev';
+            prevBtn.textContent = '‹';
+            overlay.appendChild(prevBtn);
+
+            var nextBtn = document.createElement('button');
+            nextBtn.className = 'lightbox-nav lightbox-next';
+            nextBtn.textContent = '›';
+            overlay.appendChild(nextBtn);
+
+            var lCounter = document.createElement('div');
+            lCounter.className = 'lightbox-counter';
+            lCounter.textContent = (idx + 1) + ' / ' + urls.length;
+            overlay.appendChild(lCounter);
+        }
+
+        document.body.appendChild(overlay);
+
+        function updateImg() {
+            img.src = urls[idx];
+            if (lCounter) lCounter.textContent = (idx + 1) + ' / ' + urls.length;
+        }
+
+        function close() {
+            overlay.remove();
+        }
+
+        closeBtn.addEventListener('click', close);
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) close();
+        });
+
+        if (urls.length > 1) {
+            prevBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                idx = (idx - 1 + urls.length) % urls.length;
+                updateImg();
+            });
+            nextBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                idx = (idx + 1) % urls.length;
+                updateImg();
+            });
+        }
+
+        document.addEventListener('keydown', function handler(e) {
+            if (e.key === 'Escape') { close(); document.removeEventListener('keydown', handler); }
+            if (urls.length > 1) {
+                if (e.key === 'ArrowLeft') { idx = (idx - 1 + urls.length) % urls.length; updateImg(); }
+                if (e.key === 'ArrowRight') { idx = (idx + 1) % urls.length; updateImg(); }
+            }
+        });
+    }
+
+    // Click on gallery image opens lightbox
+    items.forEach(function(item, i) {
+        item.addEventListener('click', function() {
+            openLightbox(i);
+        });
+        item.style.cursor = 'zoom-in';
+    });
+
+    var findingId = '{{ finding.id }}';
+
+    document.getElementById('reportBtn').addEventListener('click', function() {
+        if (!confirm('Пожаловаться на эту находку?')) return;
+        fetch('/api/findings/' + findingId + '/report', {method: 'POST'})
+            .then(function(r) { return r.json(); })
+            .then(function() { alert('Жалоба отправлена'); });
+    });
+
+    var voted = JSON.parse(localStorage.getItem('votedFindings') || '{}');
+    if (voted[findingId]) {
+        var btn = document.querySelector('.vote-btn.' + (voted[findingId] === 'confirmed' ? 'vote-confirmed' : 'vote-removed'));
+        if (btn) btn.classList.add('voted');
+    }
+
+    document.querySelectorAll('.vote-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var voteType = btn.dataset.type;
+            fetch('/api/findings/' + findingId + '/vote', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({vote_type: voteType})
+            })
+            .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, data: d}; }); })
+            .then(function(result) {
+                if (result.ok) {
+                    var data = result.data;
+                    document.getElementById('voteConfirmedOthers').textContent = data.confirmed_others;
+                    document.getElementById('voteRemovedCount').textContent = data.removed;
+                    var notice = document.getElementById('unconfirmedNotice');
+                    if (notice) {
+                        notice.style.display = data.confirmed_others < 3 ? 'block' : 'none';
+                    }
+                    voted[findingId] = voteType;
+                    localStorage.setItem('votedFindings', JSON.stringify(voted));
+                    btn.classList.add('voted');
+                    if (data.finding_status === 'hidden' || data.finding_status === 'published') {
+                        location.reload();
+                    }
+                } else {
+                    alert(result.data.error || 'Ошибка');
+                }
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

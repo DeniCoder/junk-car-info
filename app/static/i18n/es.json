@@ -1,0 +1,67 @@
+{
+  "cookies": {
+    "title": "Política de Cookies",
+    "description": "Utilizamos cookies para mejorar tu experiencia en nuestro sitio web.",
+    "necessary": {
+      "title": "Cookies Necesarias",
+      "description": "Estas cookies son esenciales para que el sitio web funcione correctamente.",
+      "examples": ["session_id", "csrf_token", "language_preference"]
+    },
+    "analytics": {
+      "title": "Cookies Analíticas",
+      "description": "Estas cookies nos ayudan a entender cómo los visitantes interactúan con el sitio web.",
+      "examples": ["_ga", "_gid"]
+    },
+    "accept": "Aceptar todo",
+    "decline": "Rechazar",
+    "settings": "Configuración",
+    "more_info": "Más información"
+  },
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "search": "Buscar",
+    "back": "Atrás"
+  },
+  "map": {
+    "title": "Mapa de Vehículos Abandonados",
+    "search_placeholder": "Buscar ubicación...",
+    "total_findings": "Total de hallazgos",
+    "filter_all": "Todos",
+    "legend": "Leyenda",
+    "status_confirmed": "EN EL SITIO",
+    "status_removed": "ELIMINADO",
+    "status_pending": "PENDIENTE"
+  },
+  "auth": {
+    "login": "Iniciar sesión",
+    "register": "Registrarse",
+    "logout": "Cerrar sesión",
+    "username": "Nombre de usuario",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirm_password": "Confirmar contraseña",
+    "remember_me": "Recuérdame",
+    "forgot_password": "¿Olvidaste tu contraseña?",
+    "no_account": "¿No tienes cuenta?",
+    "have_account": "¿Ya tienes cuenta?",
+    "privacy_consent": "Acepto el procesamiento de datos personales"
+  },
+  "finding": {
+    "new_finding": "Nuevo Hallazgo",
+    "location": "Ubicación",
+    "category": "Categoría",
+    "description": "Descripción",
+    "add_photos": "Añadir Fotos",
+    "submit": "Enviar",
+    "confirm": "Confirmar",
+    "report": "Reportar",
+    "details": "Detalles"
+  }
+}
