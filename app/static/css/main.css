@@ -112,9 +112,9 @@ a:hover { color: var(--text-primary); }
 /* ── Stamp Header ── */
 .stamp-header {
     position: fixed;
-    top: 16px;
+    top: 82px;
     left: 16px;
-    z-index: 1000;
+    z-index: 900;
     pointer-events: none;
 }
 
@@ -1926,7 +1926,7 @@ body::after {
     position: absolute;
     top: 100%;
     right: 0;
-    margin-top: 8px;
+    margin-top: 0;
     background: var(--bg-panel);
     border: 1px solid var(--border);
     border-radius: 4px;

@@ -3,7 +3,13 @@ import os
 
 class Config:
     SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
-    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "postgresql://localhost:5432/junk_car_info")
+    SQLALCHEMY_DATABASE_URI = os.getenv("DATABASE_URL", "postgresql+psycopg://localhost:5432/junk_car_info")
+    # The project depends on psycopg v3, which SQLAlchemy selects through the
+    # explicit ``+psycopg`` driver name. Accept the common legacy URL too.
+    if SQLALCHEMY_DATABASE_URI.startswith("postgresql://"):
+        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace(
+            "postgresql://", "postgresql+psycopg://", 1
+        )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Настройки интернационализации (i18n)

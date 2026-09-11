@@ -35,6 +35,7 @@
 
     var currentCategory = 'all';
     var searchInput = document.getElementById('searchInput');
+    var placeSearchActive = false;
 
     function createMarkerIcon(finding) {
         var cls = 'marker-icon';
@@ -127,7 +128,7 @@
 
                 // Client-side search filter (location_name)
                 var q = (searchInput && searchInput.value) ? searchInput.value.trim().toLowerCase() : '';
-                if (q.length >= 2) {
+                if (q.length >= 2 && !placeSearchActive) {
                     filtered = filtered.filter(function (f) {
                         var haystack = ((f.location_name || '') + ' ' + (f.sub_type || '')).toLowerCase();
                         return haystack.indexOf(q) !== -1;
@@ -201,6 +202,7 @@
         });
 
         searchInput.addEventListener('input', function () {
+            placeSearchActive = false;
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(function () {
                 var q = searchInput.value.trim();
@@ -220,9 +222,6 @@
             return;
         }
 
-        // Filter visible markers by location_name
-        loadFindings();
-
         // Geocode via server proxy and fly to result
         fetch('/api/geocode?q=' + encodeURIComponent(q))
             .then(function (r) { return r.json(); })
@@ -231,6 +230,7 @@
                 if (results.length > 0) {
                     var lat = parseFloat(results[0].lat);
                     var lon = parseFloat(results[0].lon);
+                    placeSearchActive = true;
                     map.setView([lat, lon], 12);
                     // Reload markers after fly animation completes
                     map.once('moveend', loadFindings);

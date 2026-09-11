@@ -27,7 +27,12 @@ def generate_csrf_token():
 
 
 def validate_csrf_token():
-    token = request.form.get("_csrf_token") or request.headers.get("X-CSRF-Token")
+    # Keep compatibility with the field name used by the authentication forms.
+    token = (
+        request.form.get("_csrf_token")
+        or request.form.get("csrf_token")
+        or request.headers.get("X-CSRF-Token")
+    )
     if not token or token != session.get("_csrf_token"):
         return False
     return True

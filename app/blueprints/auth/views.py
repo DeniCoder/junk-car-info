@@ -1,10 +1,12 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request, session
+from flask import render_template, redirect, url_for, flash, request, session
 from flask_login import login_user, logout_user, login_required, current_user
 from app.models.user import User
 from app.extensions import db
+from app.utils.security import validate_csrf_token
 from datetime import datetime
+from urllib.parse import urlparse
 
-auth_bp = Blueprint('auth', __name__)
+from . import auth_bp
 
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
@@ -13,6 +15,9 @@ def login():
         return redirect(url_for('web.index'))
     
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Refresh the page and try again.', 'error')
+            return render_template('auth/login.html'), 400
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
         remember = request.form.get('remember', False)
@@ -33,7 +38,7 @@ def login():
             db.session.commit()
             
             next_page = request.args.get('next')
-            if next_page:
+            if next_page and urlparse(next_page).scheme == '' and urlparse(next_page).netloc == '':
                 return redirect(next_page)
             return redirect(url_for('web.index'))
         else:
@@ -48,6 +53,9 @@ def register():
         return redirect(url_for('web.index'))
     
     if request.method == 'POST':
+        if not validate_csrf_token():
+            flash('Invalid CSRF token. Refresh the page and try again.', 'error')
+            return render_template('auth/register.html'), 400
         username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip()
         password = request.form.get('password', '')

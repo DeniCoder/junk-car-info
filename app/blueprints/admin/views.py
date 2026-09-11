@@ -65,15 +65,17 @@ def log_admin_action(action, entity_type, entity_id, old_value=None, new_value=N
 @AdminRateLimiter.limit_login_attempts
 @AdminRateLimiter.reset_on_success
 def login():
-    if request.method == "POST":
-        token = request.form.get("token", "")
-        if token and token == current_app.config.get("ADMIN_TOKEN"):
-            session["admin_token"] = token
+    from flask_login import current_user
+
+    if current_user.is_authenticated:
+        if current_user.is_admin:
             return redirect(url_for("admin.dashboard"))
-        error = request.args.get("error") or "Invalid token"
-        return render_template("admin/login.html", error=error)
-    error = request.args.get("error")
-    return render_template("admin/login.html", error=error)
+        flash("This account does not have administrator access.", "error")
+        return redirect(url_for("web.index"))
+
+    # Administration uses the regular account login rather than a separate
+    # shared token, so the access path is consistent for every user.
+    return redirect(url_for("auth.login", next=url_for("admin.dashboard")))
 
 
 @admin_bp.route("/logout")

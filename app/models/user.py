@@ -16,7 +16,7 @@ class User(UserMixin, db.Model):
     last_login = db.Column(db.DateTime, nullable=True)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
 
-    findings = db.relationship("Finding", backref="creator", lazy="dynamic", foreign_keys="Finding.user_id")
+    findings = db.relationship("Finding", back_populates="user", lazy="dynamic", foreign_keys="Finding.user_id")
     notifications = db.relationship("Notification", backref="user", lazy="dynamic", order_by="Notification.created_at.desc()")
     appeals = db.relationship("Appeal", backref="user", lazy="dynamic", foreign_keys="Appeal.user_id")
 

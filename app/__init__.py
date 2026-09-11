@@ -1,4 +1,5 @@
 import os
+import click
 
 from dotenv import load_dotenv
 load_dotenv()
@@ -65,6 +66,22 @@ def create_app(config_class=Config):
     register_error_handlers(app)
 
     os.makedirs(app.config["MEDIA_ROOT"], exist_ok=True)
+
+    @app.cli.command("create-admin")
+    @click.option("--username", prompt=True, help="Administrator username.")
+    @click.option("--email", prompt=True, help="Administrator email.")
+    @click.password_option(confirmation_prompt=True)
+    def create_admin(username, email, password):
+        """Create an administrator account for the local instance."""
+        username = username.strip()
+        email = email.strip().lower()
+        if User.query.filter((User.username == username) | (User.email == email)).first():
+            raise click.ClickException("A user with this username or email already exists.")
+        user = User(username=username, email=email, is_admin=True, is_active=True)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        click.echo(f"Administrator '{username}' created.")
 
     return app
 

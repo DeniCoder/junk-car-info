@@ -146,14 +146,32 @@ def geocode():
     lang = session.get('language', 'ru')
     
     # Убираем ограничение countrycodes=ru для мирового поиска
-    url = f"https://nominatim.openstreetmap.org/search?format=json&q={urllib.parse.quote(q)}&limit=5"
+    # Photon provides a reliable worldwide fallback for city search.
+    url = f"https://photon.komoot.io/api/?q={urllib.parse.quote(q)}&limit=5&lang={urllib.parse.quote(lang)}"
     req = urllib.request.Request(url, headers={
-        "User-Agent": "JunkCarMap/1.0 (international platform)",
+        "User-Agent": "junk-car-info/1.0 (contact: admin@junkcar.example.com)",
         "Accept-Language": lang,
     })
     try:
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        # Ignore a stale system proxy: it is common in local Windows setups
+        # and otherwise makes a functioning public geocoder look unavailable.
+        opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+        with opener.open(req, timeout=5) as resp:
             data = py_json.loads(resp.read().decode("utf-8"))
-        return jsonify({"results": data})
+        results = []
+        for feature in data.get("features", []):
+            coordinates = feature.get("geometry", {}).get("coordinates", [])
+            if len(coordinates) < 2:
+                continue
+            properties = feature.get("properties", {})
+            label = ", ".join(filter(None, [
+                properties.get("name"), properties.get("city"), properties.get("country"),
+            ]))
+            results.append({
+                "lat": str(coordinates[1]),
+                "lon": str(coordinates[0]),
+                "display_name": label or q,
+            })
+        return jsonify({"results": results, "provider": "photon"})
     except Exception:
         return jsonify({"results": []})

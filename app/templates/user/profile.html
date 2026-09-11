@@ -2,7 +2,7 @@
 
 {% block title %}Личный кабинет{% endblock %}
 
-{% block content %}
+{% block body %}
 <div class="container mt-4">
     <div class="row">
         <div class="col-md-3">
@@ -36,7 +36,8 @@
                             <tr>
                                 <td>{{ finding.id }}</td>
                                 <td>
-                                    {% if finding.photo %}
+                                    {% set photo = finding.photos.first() %}
+                                    {% if photo %}
                                         <img src="{{ finding.photo }}" alt="Фото" style="width: 50px; height: 50px; object-fit: cover;" class="rounded">
                                     {% else %}
                                         <span class="text-muted">Нет фото</span>
@@ -56,7 +57,8 @@
                                 </td>
                                 <td>{{ finding.created_at.strftime('%d.%m.%Y') }}</td>
                                 <td>
-                                    {% if finding.status in ['rejected', 'hidden'] and not finding.appeal %}
+                                    {% set pending_appeal = finding.appeals | selectattr('user_id', 'equalto', current_user.id) | selectattr('status', 'equalto', 'pending') | list %}
+                                    {% if finding.status in ['rejected', 'hidden'] and not pending_appeal %}
                                         <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#appealModal{{ finding.id }}">
                                             Подать апелляцию
                                         </button>
@@ -66,6 +68,7 @@
                                             <div class="modal-dialog">
                                                 <div class="modal-content">
                                                     <form action="{{ url_for('user.submit_appeal', finding_id=finding.id) }}" method="POST">
+                                                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                                                         <div class="modal-header">
                                                             <h5 class="modal-title">Апелляция на решение #{{ finding.id }}</h5>
                                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -82,7 +85,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    {% elif finding.appeal %}
+                                    {% elif pending_appeal %}
                                         <span class="badge bg-info">Апелляция подана</span>
                                     {% else %}
                                         <span class="text-muted">-</span>

@@ -2,7 +2,7 @@
 
 {% block title %}Уведомления{% endblock %}
 
-{% block content %}
+{% block body %}
 <div class="container mt-4">
     <div class="row">
         <div class="col-md-3">
@@ -21,6 +21,7 @@
                 <h2>Уведомления</h2>
                 {% if unread_count > 0 %}
                 <form action="{{ url_for('user.mark_all_notifications_read') }}" method="POST">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-sm btn-outline-secondary">Отметить все как прочитанные</button>
                 </form>
                 {% endif %}
@@ -37,6 +38,7 @@
                         <p class="mb-1">{{ notification.message }}</p>
                         {% if not notification.is_read %}
                         <form action="{{ url_for('user.mark_notification_read', notification_id=notification.id) }}" method="POST" class="d-inline">
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-outline-primary">Отметить как прочитанное</button>
                         </form>
                         {% else %}

@@ -21,7 +21,7 @@
             <nav class="main-nav" id="mainNav">
                 <a href="{{ url_for('web.index') }}" class="nav-link{% if request.endpoint == 'web.index' %} active{% endif %}">Карта</a>
                 <a href="{{ url_for('web.contacts') }}" class="nav-link{% if request.endpoint == 'web.contacts' %} active{% endif %}">Контакты</a>
-                {% if current_user.is_admin %}
+                {% if current_user.is_authenticated and current_user.is_admin %}
                     <a href="{{ url_for('admin.dashboard') }}" class="nav-link">Админ-панель</a>
                 {% endif %}
             </nav>

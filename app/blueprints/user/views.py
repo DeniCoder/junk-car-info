@@ -5,6 +5,7 @@ from app import db
 from app.models.finding import Finding
 from app.models.appeal import Appeal
 from app.models.notification import Notification
+from app.utils.security import validate_csrf_token
 
 @user_bp.route('/profile')
 @login_required
@@ -30,6 +31,9 @@ def notifications():
 @login_required
 def mark_notification_read(notification_id):
     """Отметить уведомление как прочитанное"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Refresh the page and try again.', 'danger')
+        return redirect(url_for('user.notifications'))
     notification = Notification.query.filter_by(id=notification_id, user_id=current_user.id).first_or_404()
     notification.is_read = True
     db.session.commit()
@@ -39,21 +43,27 @@ def mark_notification_read(notification_id):
 @login_required
 def mark_all_notifications_read():
     """Отметить все уведомления как прочитанные"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Refresh the page and try again.', 'danger')
+        return redirect(url_for('user.notifications'))
     Notification.query.filter_by(user_id=current_user.id, is_read=False).update({'is_read': True})
     db.session.commit()
     return redirect(url_for('user.notifications'))
 
-@user_bp.route('/findings/<int:finding_id>/appeal', methods=['POST'])
+@user_bp.route('/findings/<finding_id>/appeal', methods=['POST'])
 @login_required
 def submit_appeal(finding_id):
     """Подать апелляцию на решение по жалобе"""
+    if not validate_csrf_token():
+        flash('Invalid CSRF token. Refresh the page and try again.', 'danger')
+        return redirect(url_for('user.profile'))
     finding = Finding.query.filter_by(id=finding_id, user_id=current_user.id).first_or_404()
     
     if finding.status not in ['rejected', 'hidden']:
         flash('Апелляцию можно подать только на отклоненные или скрытые жалобы.', 'warning')
         return redirect(url_for('user.profile'))
     
-    if finding.appeal:
+    if Appeal.query.filter_by(finding_id=finding.id, user_id=current_user.id, status='pending').first():
         flash('Апелляция уже подана для этой жалобы.', 'warning')
         return redirect(url_for('user.profile'))
     
