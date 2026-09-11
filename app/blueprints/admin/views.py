@@ -18,6 +18,9 @@ def check_admin():
     # Check for legacy admin token OR new user-based admin
     if session.get("admin_token") and session.get("admin_token") == current_app.config.get("ADMIN_TOKEN"):
         return True
+    from flask_login import current_user
+    if current_user.is_authenticated and current_user.is_admin:
+        return True
     if session.get('user_id'):
         user = User.query.get(session['user_id'])
         if user and user.is_admin:
@@ -27,6 +30,9 @@ def check_admin():
 
 def get_current_admin_user():
     """Get the current admin user object for audit logging."""
+    from flask_login import current_user
+    if current_user.is_authenticated and current_user.is_admin:
+        return current_user
     if session.get('user_id'):
         return User.query.get(session['user_id'])
     return None

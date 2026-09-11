@@ -7,7 +7,8 @@ from flask import Flask, request, session
 from flask_babel import Babel, lazy_gettext as _l
 
 from app.config import Config
-from app.extensions import db, migrate, limiter, talisman
+from app.extensions import db, migrate, limiter, talisman, login_manager
+from app.models.user import User
 
 
 def create_app(config_class=Config):
@@ -32,6 +33,7 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
     limiter.init_app(app)
+    login_manager.init_app(app)
     talisman.init_app(
         app,
         content_security_policy=app.config["CONTENT_SECURITY_POLICY"],
@@ -55,6 +57,10 @@ def create_app(config_class=Config):
 
     from app.utils.security import csrf_init
     csrf_init(app)
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        return User.query.get(int(user_id))
 
     register_error_handlers(app)
 
